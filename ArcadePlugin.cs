@@ -86,12 +86,6 @@ namespace ArcadiaCustoms
             }
         }
 
-        public static IEnumerator SetupScene()
-        {
-            yield return new WaitForSeconds(20F);
-            MainMenuTester();
-            yield break;
-        }
         public static void MainMenuTester()
         {
             var menu = new GameObject("Main Menu System");

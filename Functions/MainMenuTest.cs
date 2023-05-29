@@ -44,7 +44,7 @@ namespace ArcadiaCustoms.Functions
         {
             screenScale = (float)Screen.width / 1920f;
             screenScaleInverse = 1f / screenScale;
-            if (InputDataManager.inst.menuActions.Cancel.WasPressed)
+            if (InputDataManager.inst.menuActions.Cancel.WasPressed && !LSHelpers.IsUsingInputField())
             {
                 SceneManager.inst.LoadScene("Input Select");
             }
