@@ -5,7 +5,7 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.UI;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Functions
 {
     public class SpriteManager : MonoBehaviour
     {

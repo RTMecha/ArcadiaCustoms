@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Functions
 {
 	public static class RTMath
 	{

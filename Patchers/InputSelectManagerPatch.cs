@@ -1,20 +1,9 @@
-﻿using System;
-using System.Reflection;
-using System.Reflection.Emit;
-using System.Collections;
+﻿using System.Reflection.Emit;
 using System.Collections.Generic;
-using BepInEx;
 using HarmonyLib;
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.EventSystems;
-using BepInEx.Configuration;
-using UnityEngine.Rendering.PostProcessing;
-using SimpleJSON;
-using DG.Tweening;
-using LSFunctions;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Patchers
 {
     [HarmonyPatch(typeof(InputSelectManager))]
     public class InputSelectManagerPatch : MonoBehaviour

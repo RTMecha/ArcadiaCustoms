@@ -13,7 +13,7 @@ using SimpleJSON;
 using DG.Tweening;
 using HarmonyLib;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Functions
 {
 	public class RTFile : MonoBehaviour
 	{

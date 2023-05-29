@@ -1,9 +1,6 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 using HarmonyLib;
 
@@ -13,8 +10,9 @@ using UnityEngine.Rendering.PostProcessing;
 
 using LSFunctions;
 using DG.Tweening;
+using ArcadiaCustoms.Functions;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Patchers
 {
 
     [HarmonyPatch(typeof(GameManager))]
@@ -96,25 +94,31 @@ namespace ArcadiaCustoms
             return true;
         }
 
-
-
 		[HarmonyPatch("PlayLevel")]
 		[HarmonyPrefix]
 		private static bool PlayLevel(GameManager __instance, AudioClip _song)
 		{
-			__instance.Camera.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
-			__instance.CameraPerspective.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
-			__instance.songLength = _song.length;
-			__instance.StartCoroutine(playBuffer(__instance, _song));
-			return false;
+			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
+			{
+				__instance.Camera.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
+				__instance.CameraPerspective.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
+				__instance.songLength = _song.length;
+				__instance.StartCoroutine(playBuffer(__instance, _song));
+				return false;
+			}
+			return true;
 		}
 
 		[HarmonyPatch("playBuffer")]
 		[HarmonyPrefix]
 		private static bool playBufferPrefix(GameManager __instance, ref IEnumerator __result, AudioClip __0)
 		{
-			__result = playBuffer(__instance, __0);
-			return false;
+			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
+			{
+				__result = playBuffer(__instance, __0);
+				return false;
+			}
+			return true;
 		}
 
 		private static IEnumerator playBuffer(GameManager __instance, AudioClip _song)
@@ -136,10 +140,11 @@ namespace ArcadiaCustoms
 				}
 			}
 			__instance.ResetCheckpoints();
-			ObjectManager.inst.StartCoroutine(RTFile.IupdateObjects());
+			yield return ObjectManager.inst.StartCoroutine(RTFile.IupdateObjects());
 			__instance.UpdateTimeline();
 			AudioManager.inst.SetMusicTime(0f);
 
+			//Dunno how to reference delegates outside of their own class.
 			//GameManager.UpdatedAudioPos(AudioManager.inst.CurrentAudioSource.isPlaying, AudioManager.inst.CurrentAudioSource.time, AudioManager.inst.CurrentAudioSource.pitch);
 			__instance.introAnimator.SetTrigger("play");
 			__instance.SpawnPlayers(DataManager.inst.gameData.beatmapData.checkpoints[0].pos);
@@ -150,8 +155,7 @@ namespace ArcadiaCustoms
 		[HarmonyPrefix]
 		private static bool EndOfLevelPatch(GameManager __instance)
 		{
-			//AudioManager.inst.CurrentAudioSource.Pause();
-			AudioManager.inst.CurrentAudioSource.loop = true;
+			AudioManager.inst.CurrentAudioSource.Pause();
 			GameManager.inst.players.SetActive(false);
 			InputDataManager.inst.SetAllControllerRumble(0f);
 			__instance.gameState = GameManager.State.Paused;

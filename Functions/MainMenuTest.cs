@@ -15,7 +15,7 @@ using DG.Tweening;
 using InControl;
 using TMPro;
 
-namespace ArcadiaCustoms
+namespace ArcadiaCustoms.Functions
 {
     public class MainMenuTest : MonoBehaviour
     {
