@@ -27,7 +27,7 @@ using ArcadiaCustoms.Patchers;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.0")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.1")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
     {
