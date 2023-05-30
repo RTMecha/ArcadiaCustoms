@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Reflection;
 
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,6 +34,8 @@ namespace ArcadiaCustoms.Functions
         public static Font inconsolataFont;
         public static float screenScale;
         public static float screenScaleInverse;
+        public static Material fontMaterial;
+        public static GameObject textMeshPro;
 
         private void Awake()
         {
@@ -69,10 +72,26 @@ namespace ArcadiaCustoms.Functions
             yield return inst.StartCoroutine(DeleteComponents());
 
             var  findFolder = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
-                        where x.name == "folder"
-                        select x).ToList();
+                                where x.name == "folder"
+                                select x).ToList();
 
-            inconsolataFont = findFolder[0].transform.GetChild(0).GetComponent<Text>().font;
+            var findButton = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
+                              where x.name == "Text Element"
+                              select x).ToList();
+
+            textMeshPro = findButton[0].transform.GetChild(1).gameObject;
+            fontMaterial = findButton[0].transform.GetChild(1).GetComponent<TextMeshProUGUI>().fontMaterial;
+
+            if (findFolder.Count > 0)
+            {
+                inconsolataFont = findFolder[0].transform.GetChild(0).GetComponent<Text>().font;
+            }
+            else
+            {
+                inconsolataFont = Font.GetDefault();
+            }
+
+            levelFolder = FolderButton();
 
             ArcadePlugin.current = 0;
             ArcadePlugin.arcadeQueue.Clear();
@@ -83,8 +102,6 @@ namespace ArcadiaCustoms.Functions
 
             levelList.transform.SetParent(null);
             levelList.SetActive(true);
-
-            levelFolder = findFolder[0];
 
             //GameObject cameraObject = new GameObject("Main Camera");
             //var cam = cameraObject.AddComponent<Camera>();
@@ -104,10 +121,78 @@ namespace ArcadiaCustoms.Functions
             Destroy(levelWindow.GetComponent<Button>());
             levelWindow.GetComponent<Image>().color = new Color(0.3106f, 0.2906f, 0.3506f, 1f);
 
-            var folderName = levelWindow.transform.Find("folder-name").GetComponent<Text>();
-            folderName.text = "Something";
-            folderName.alignment = TextAnchor.LowerLeft;
-            levelWindow.transform.Find("folder-name").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 110f);
+            //Artist
+            {
+                var folder = levelWindow.transform.Find("folder-name").gameObject;
+                folder.name = "artist";
+                var folderName = folder.GetComponent<TextMeshProUGUI>();
+                folderName.text = "Something";
+                folderName.alignment = TextAlignmentOptions.BottomLeft;
+                folderName.fontSize = 22;
+                folderName.color = offWhite;
+                folder.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 260f);
+                folder.GetComponent<RectTransform>().sizeDelta = new Vector2(-12f, -8f);
+            }
+
+            //Song
+            {
+                var folder = Instantiate(levelWindow.transform.Find("artist").gameObject);
+                folder.transform.SetParent(levelWindowRT.transform);
+                folder.transform.localScale = Vector3.one;
+                folder.name = "song";
+                var folderName = folder.GetComponent<TextMeshProUGUI>();
+                folderName.text = "Something";
+                folderName.alignment = TextAlignmentOptions.BottomLeft;
+                folderName.fontSize = 22;
+                folderName.color = offWhite;
+                folder.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 240f);
+                folder.GetComponent<RectTransform>().sizeDelta = new Vector2(-12f, -8f);
+            }
+
+            //Creator
+            {
+                var folder = Instantiate(levelWindow.transform.Find("artist").gameObject);
+                folder.transform.SetParent(levelWindowRT.transform);
+                folder.transform.localScale = Vector3.one;
+                folder.name = "creator";
+                var folderName = folder.GetComponent<TextMeshProUGUI>();
+                folderName.text = "Something";
+                folderName.alignment = TextAlignmentOptions.BottomLeft;
+                folderName.fontSize = 22;
+                folderName.color = offWhite;
+                folder.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 220f);
+                folder.GetComponent<RectTransform>().sizeDelta = new Vector2(-12f, -8f);
+            }
+
+            //Difficulty
+            {
+                var folder = Instantiate(levelWindow.transform.Find("artist").gameObject);
+                folder.transform.SetParent(levelWindowRT.transform);
+                folder.transform.localScale = Vector3.one;
+                folder.name = "difficulty";
+                var folderName = folder.GetComponent<TextMeshProUGUI>();
+                folderName.text = "Something";
+                folderName.alignment = TextAlignmentOptions.BottomLeft;
+                folderName.fontSize = 22;
+                folderName.color = offWhite;
+                folder.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 200f);
+                folder.GetComponent<RectTransform>().sizeDelta = new Vector2(-12f, -8f);
+            }
+
+            //Description
+            {
+                var folder = Instantiate(levelWindow.transform.Find("artist").gameObject);
+                folder.transform.SetParent(levelWindowRT.transform);
+                folder.transform.localScale = Vector3.one;
+                folder.name = "description";
+                var folderName = folder.GetComponent<TextMeshProUGUI>();
+                folderName.text = "Something";
+                folderName.alignment = TextAlignmentOptions.TopLeft;
+                folderName.fontSize = 22;
+                folderName.color = offWhite;
+                folder.GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, -625f);
+                folder.GetComponent<RectTransform>().sizeDelta = new Vector2(-12f, -8f);
+            }
 
             var buttons = new GameObject("buttons");
             buttons.transform.localScale = Vector3.one;
@@ -127,10 +212,11 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "play";
-                var play = playButton.transform.GetChild(0).GetComponent<Text>();
+                var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[PLAY]";
                 play.fontSize = 20;
-                play.alignment = TextAnchor.MiddleCenter;
+                play.alignment = TextAlignmentOptions.Center;
+                play.color = offWhite;
 
                 var playRT = playButton.GetComponent<RectTransform>();
                 playRT.pivot = new Vector2(0.5f, 0.5f);
@@ -144,6 +230,7 @@ namespace ArcadiaCustoms.Functions
                         ArcadePlugin.current = 0;
                         SaveManager.inst.ArcadeQueue = ArcadePlugin.arcadeQueue[0];
                     }
+                    menuUI.SetActive(false);
                     DataManager.inst.UpdateSettingBool("IsArcade", true);
                     SceneManager.inst.LoadScene("Game");
                 });
@@ -154,10 +241,11 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "add";
-                var play = playButton.transform.GetChild(0).GetComponent<Text>();
+                var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[ADD TO QUEUE]";
                 play.fontSize = 20;
-                play.alignment = TextAnchor.MiddleCenter;
+                play.alignment = TextAlignmentOptions.Center;
+                play.color = offWhite;
 
                 var playRT = playButton.GetComponent<RectTransform>();
                 playRT.pivot = new Vector2(0.5f, 0.5f);
@@ -175,10 +263,11 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "get song";
-                var play = playButton.transform.GetChild(0).GetComponent<Text>();
+                var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[GET SONG]";
                 play.fontSize = 20;
-                play.alignment = TextAnchor.MiddleCenter;
+                play.alignment = TextAlignmentOptions.Center;
+                play.color = offWhite;
 
                 var playRT = playButton.GetComponent<RectTransform>();
                 playRT.pivot = new Vector2(0.5f, 0.5f);
@@ -196,10 +285,11 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "settings";
-                var play = playButton.transform.GetChild(0).GetComponent<Text>();
+                var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[SETTINGS]";
                 play.fontSize = 20;
-                play.alignment = TextAnchor.MiddleCenter;
+                play.alignment = TextAlignmentOptions.Center;
+                play.color = offWhite;
 
                 var playRT = playButton.GetComponent<RectTransform>();
                 playRT.pivot = new Vector2(0.5f, 0.5f);
@@ -229,11 +319,7 @@ namespace ArcadiaCustoms.Functions
 
             iconBaseImage.sprite = (ArcadeManager.inst.ArcadeImageFiles.ContainsKey(0) ? ArcadeManager.inst.ArcadeImageFiles[0] : SteamWorkshop.inst.defaultSteamImageSprite);
 
-
-            var findButton = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
-                              where x.name == "Text Element"
-                              select x).ToList();
-            var tex = Instantiate(findButton[0].transform.GetChild(1).gameObject);
+            var tex = Instantiate(textMeshPro);
             tex.transform.SetParent(iconBase.transform);
             tex.transform.localScale = new Vector3(6f, 6f, 1f);
             tex.transform.localPosition = new Vector3(100f, -220f, 0f);
@@ -316,22 +402,35 @@ namespace ArcadiaCustoms.Functions
             Destroy(settingsWindow.GetComponent<Button>());
             settingsWindow.GetComponent<Image>().color = new Color(0.3106f, 0.2906f, 0.3506f, 1f);
 
-            var settingsName = settingsWindow.transform.Find("folder-name").GetComponent<Text>();
+            var settingsName = settingsWindow.transform.Find("folder-name").GetComponent<TextMeshProUGUI>();
             settingsName.text = "Settings";
-            settingsName.alignment = TextAnchor.MiddleCenter;
+            settingsName.alignment = TextAlignmentOptions.Center;
+            settingsName.fontSize = 26;
             settingsWindow.transform.Find("folder-name").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 45f);
 
             var difficultyName = Instantiate(settingsName);
             difficultyName.transform.SetParent(settingsWindow.transform);
-            difficultyName.GetComponent<Text>().text = "[DIFFICULTY]";
+            difficultyName.GetComponent<TextMeshProUGUI>().text = "[DIFFICULTY]";
             difficultyName.name = "difficulty-name";
             difficultyName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-247f, 15f);
 
             var speedName = Instantiate(settingsName);
             speedName.transform.SetParent(settingsWindow.transform);
-            speedName.GetComponent<Text>().text = "[SPEED MULT]";
+            speedName.GetComponent<TextMeshProUGUI>().text = "[SPEED MULT]";
             speedName.name = "speed-name";
             speedName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-80f, 15f);
+
+            var sooon1Name = Instantiate(settingsName);
+            sooon1Name.transform.SetParent(settingsWindow.transform);
+            sooon1Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
+            sooon1Name.name = "soon1-name";
+            sooon1Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(87f, 15f);
+
+            var sooon2Name = Instantiate(settingsName);
+            sooon2Name.transform.SetParent(settingsWindow.transform);
+            sooon2Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
+            sooon2Name.name = "soon2-name";
+            sooon2Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(254f, 15f);
 
             var settingsbuttons = new GameObject("buttons");
             settingsbuttons.transform.localScale = Vector3.one;
@@ -400,10 +499,11 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(menuUI.transform);
                 playButton.name = "back";
-                var play = playButton.transform.GetChild(0).GetComponent<Text>();
+                var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[RETURN]";
                 play.fontSize = 20;
-                play.alignment = TextAnchor.MiddleCenter;
+                play.alignment = TextAlignmentOptions.Center;
+                play.color = offWhite;
 
                 var playRT = playButton.GetComponent<RectTransform>();
                 playRT.pivot = new Vector2(0.5f, 0.5f);
@@ -436,6 +536,8 @@ namespace ArcadiaCustoms.Functions
             secret.transform.SetParent(menuUI.transform);
             secret.GetComponent<Renderer>().material.DOColor(new Color(1f, 1f, 1f, 0f), 2f);
         }
+
+        public static Color offWhite = new Color(0.8679f, 0.86f, 0.9f, 1f);
 
         public static void SortSongs()
         {
@@ -628,12 +730,26 @@ namespace ArcadiaCustoms.Functions
                     gameObject.name = level.metaData.song.title;
                     gameObject.transform.SetParent(levelList.transform.Find("mask/content"));
                     gameObject.transform.localScale = Vector3.one;
-                    var text = gameObject.transform.GetChild(0).GetComponent<Text>();
-                    text.text = string.Format("{0} - {1}", level.metaData.artist.Name, level.metaData.song.title);
-                    text.alignment = TextAnchor.MiddleLeft;
+                    if (gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>())
+                    {
+                        var text = gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
+                        text.text = string.Format("{0} - {1}", level.metaData.artist.Name, level.metaData.song.title);
+                        text.alignment = TextAlignmentOptions.Left;
+                        text.color = offWhite;
+                        text.fontSize = 26;
 
-                    var textRT = text.GetComponent<RectTransform>();
-                    textRT.anchoredPosition = new Vector2(48f, 0f);
+                        var textRT = text.GetComponent<RectTransform>();
+                        textRT.anchoredPosition = new Vector2(48f, 0f);
+                    }
+                    else
+                    {
+                        var text = gameObject.transform.GetChild(0).GetComponent<Text>();
+                        text.text = string.Format("{0} - {1}", level.metaData.artist.Name, level.metaData.song.title);
+                        text.alignment = TextAnchor.MiddleLeft;
+
+                        var textRT = text.GetComponent<RectTransform>();
+                        textRT.anchoredPosition = new Vector2(48f, 0f);
+                    }
 
                     var button = gameObject.GetComponent<Button>();
                     button.onClick.RemoveAllListeners();
@@ -733,9 +849,24 @@ namespace ArcadiaCustoms.Functions
                 levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = "-";
             }
             levelWindow.transform.Find("icon").GetComponent<Image>().sprite = (ArcadeManager.inst.ArcadeImageFiles.ContainsKey(_steamItem.itemID) ? ArcadeManager.inst.ArcadeImageFiles[_steamItem.itemID] : SteamWorkshop.inst.defaultSteamImageSprite);
-            levelWindow.transform.Find("folder-name").GetComponent<Text>().text = string.Format("Artist: {0}\nSong: {1}\nCreator: {2}\nDescription: {3}", _steamItem.metaData.artist.Name, _steamItem.metaData.song.title, _steamItem.metaData.creator.steam_name, LSText.ClampString(_steamItem.metaData.song.description, 400));
+            levelWindow.transform.Find("artist").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Artist</b>: {0}", _steamItem.metaData.artist.Name);
+            levelWindow.transform.Find("song").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Song</b>: {0}", _steamItem.metaData.song.title);
+            levelWindow.transform.Find("creator").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Creator</b>: {0}", _steamItem.metaData.creator.steam_name);
+            levelWindow.transform.Find("difficulty").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Difficulty</b>: {0}", string.Format("<b><color=#{0}>{1}</color></b>", LSColors.ColorToHex(_steamItem.metaData.song.getDifficultyColor()), _steamItem.metaData.song.getDifficulty()));
+
+            List<string> stringList = LSText.WordWrap(_steamItem.metaData.song.description, 60);
+            string str = "";
+            int num = Mathf.Clamp(stringList.Count, 0, 3);
+
+            for (int i = 0; i < num; i++)
+            {
+                str += stringList[i] + "<br>";
+            }
+
+            levelWindow.transform.Find("description").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Description</b>: <br>{0}", LSText.ClampString(str, 400));
+
             var add = levelWindow.transform.Find("buttons/add");
-            add.GetChild(0).GetComponent<Text>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited) != null ? "[REMOVE FROM QUEUE]" : "[ADD TO QUEUE]");
+            add.GetChild(0).GetComponent<TextMeshProUGUI>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited && x.MetaData.beatmap.workshop_id == SaveManager.inst.ArcadeQueue.MetaData.beatmap.workshop_id) != null ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]");
             add.GetComponent<Button>().onClick.RemoveAllListeners();
             add.GetComponent<Button>().onClick.AddListener(delegate ()
             {
@@ -747,7 +878,7 @@ namespace ArcadiaCustoms.Functions
                 {
                     ArcadePlugin.arcadeQueue.Add(SaveManager.inst.ArcadeQueue);
                 }
-                add.GetChild(0).GetComponent<Text>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited) != null ? "[REMOVE FROM QUEUE]" : "[ADD TO QUEUE]");
+                add.GetChild(0).GetComponent<TextMeshProUGUI>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited && x.MetaData.beatmap.workshop_id == SaveManager.inst.ArcadeQueue.MetaData.beatmap.workshop_id) != null ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]");
             });
         }
 
@@ -797,6 +928,7 @@ namespace ArcadiaCustoms.Functions
         public static IEnumerator GenerateOpenFilePopup()
         {
             var inter = new GameObject("Interface");
+            inter.transform.localScale = Vector3.one;
             inter.AddComponent<SpriteManager>();
             menuUI = inter;
             var interfaceRT = inter.AddComponent<RectTransform>();
@@ -932,6 +1064,7 @@ namespace ArcadiaCustoms.Functions
             var e = (from x in Resources.FindObjectsOfTypeAll<Font>()
                      where x.name == "Inconsolata-Bold"
                      select x).ToList();
+
             if (e.Count > 0 && e[0] != null)
             {
                 titletext.font = e[0];
@@ -977,7 +1110,7 @@ namespace ArcadiaCustoms.Functions
         public static GameObject FolderButton()
         {
             var button = GenerateUIButton("folder", null);
-            var folderName = GenerateUIText("folder-name", ((GameObject)button["GameObject"]).transform);
+            var folderName = GenerateUITextMeshPro("folder-name", ((GameObject)button["GameObject"]).transform);
 
             var brt = (RectTransform)button["RectTransform"];
             SetRectTransform(brt, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.right, new Vector2(96f, 32f));
@@ -1035,8 +1168,44 @@ namespace ArcadiaCustoms.Functions
             dictionary.Add("RectTransform", gameObject.AddComponent<RectTransform>());
             dictionary.Add("CanvasRenderer", gameObject.AddComponent<CanvasRenderer>());
             var text = gameObject.AddComponent<Text>();
-            text.font = inconsolataFont;
+            text.font = Font.GetDefault();
             text.fontSize = 20;
+            dictionary.Add("Text", text);
+
+            return dictionary;
+        }
+
+        public static Dictionary<string, object> GenerateUITextMeshPro(string _name, Transform _parent, bool _noFont = false)
+        {
+            var dictionary = new Dictionary<string, object>();
+            var gameObject = Instantiate(textMeshPro);
+            gameObject.name = _name;
+            gameObject.transform.SetParent(_parent);
+
+            dictionary.Add("GameObject", gameObject);
+            dictionary.Add("RectTransform", gameObject.GetComponent<RectTransform>());
+            dictionary.Add("CanvasRenderer", gameObject.GetComponent<CanvasRenderer>());
+            var text = gameObject.GetComponent<TextMeshProUGUI>();
+
+            if (_noFont)
+            {
+                var refer = MaterialReferenceManager.instance;
+                var dictionary2 = (Dictionary<int, TMP_FontAsset>)refer.GetType().GetField("m_FontAssetReferenceLookup", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(refer);
+
+                TMP_FontAsset tmpFont;
+                if (dictionary2.ToList().Find(x => x.Value.name == "Arial").Value != null)
+                {
+                    tmpFont = dictionary2.ToList().Find(x => x.Value.name == "Arial").Value;
+                }
+                else
+                {
+                    tmpFont = dictionary2.ToList().Find(x => x.Value.name == "Liberation Sans SDF").Value;
+                }
+
+                text.font = tmpFont;
+                text.fontSize = 20;
+            }
+
             dictionary.Add("Text", text);
 
             return dictionary;
@@ -1226,5 +1395,7 @@ namespace ArcadiaCustoms.Functions
             int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(_steamItem.metaData.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[_steamItem.metaData.beatmap.workshop_id].Hits.Count : -1;
             return DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
         }
+
+
     }
 }

@@ -965,7 +965,6 @@ namespace ArcadiaCustoms.Functions
 			return null;
         }
 
-
         public static IEnumerator IupdateObjects()
         {
             var objectManager = ObjectManager.inst;
@@ -1003,24 +1002,38 @@ namespace ArcadiaCustoms.Functions
             yield break;
         }
 
-        public static string GetApplicationDirectory()
+		public static AssetBundle GetAssetBundle(string _filepath, string _bundle)
+		{
+			return AssetBundle.LoadFromFile(Path.Combine(_filepath, _bundle));
+		}
+
+		public static void GetAsset(string _filepath, string _bundle, string _filename, bool _unload, Action<object> callback)
+		{
+			var assetBundle = GetAssetBundle(_filepath, _bundle);
+			var prefab = assetBundle.LoadAsset(_filename);
+			callback(Instantiate(prefab));
+
+			if (_unload)
+			{
+				assetBundle.Unload(false);
+			}
+		}
+
+		public static string GetApplicationDirectory()
 		{
 			return Application.dataPath.Substring(0, Application.dataPath.LastIndexOf("/")) + "/";
 		}
 
-		// Token: 0x060007E4 RID: 2020 RVA: 0x0004BC17 File Offset: 0x00049E17
 		public static bool FileExists(string _filePath)
 		{
 			return !string.IsNullOrEmpty(_filePath) && File.Exists(_filePath);
 		}
 
-		// Token: 0x060007E5 RID: 2021 RVA: 0x0004BC29 File Offset: 0x00049E29
 		public static bool DirectoryExists(string _directoryPath)
 		{
 			return !string.IsNullOrEmpty(_directoryPath) && Directory.Exists(_directoryPath);
 		}
 
-		// Token: 0x060007E6 RID: 2022 RVA: 0x0004BC3C File Offset: 0x00049E3C
 		public static string GetBeatmapMiscURL(string beatmapFileName, string filename)
 		{
 			return new WWW(string.Concat(new string[]
@@ -1033,7 +1046,6 @@ namespace ArcadiaCustoms.Functions
 			})).url;
 		}
 
-		// Token: 0x060007E7 RID: 2023 RVA: 0x0004BC94 File Offset: 0x00049E94
 		public static string GetBeatmapURL(string filename)
 		{
 			return new WWW(string.Concat(new string[]
@@ -1047,7 +1059,6 @@ namespace ArcadiaCustoms.Functions
 			})).url;
 		}
 
-		// Token: 0x060007E8 RID: 2024 RVA: 0x0004BCF4 File Offset: 0x00049EF4
 		public static bool IsValidBeatmapFile(string filename)
 		{
 			bool result = true;
@@ -1085,7 +1096,6 @@ namespace ArcadiaCustoms.Functions
 			})).url;
 		}
 
-		// Token: 0x060007EA RID: 2026 RVA: 0x0004BDA8 File Offset: 0x00049FA8
 		public static bool IsValidAudioFile(string filename)
 		{
 			bool result = true;
@@ -1109,7 +1119,6 @@ namespace ArcadiaCustoms.Functions
 			return result;
 		}
 
-		// Token: 0x060007EB RID: 2027 RVA: 0x0004BDFC File Offset: 0x00049FFC
 		public static string GetSettingsURL(string filename)
 		{
 			return new WWW(Application.dataPath.Substring(0, Application.dataPath.LastIndexOf("/")) + "/Misc Files/" + filename + ".ls").url;
@@ -1139,7 +1148,6 @@ namespace ArcadiaCustoms.Functions
 			return result;
 		}
 
-		// Token: 0x060007ED RID: 2029 RVA: 0x0004BE83 File Offset: 0x0004A083
 		public static void WriteToFile(string path, string json)
 		{
 			StreamWriter streamWriter = new StreamWriter(path);
@@ -1148,11 +1156,8 @@ namespace ArcadiaCustoms.Functions
 			streamWriter.Close();
 		}
 
-		// Token: 0x020002D0 RID: 720
 		public static class OpenInFileBrowser
 		{
-			// Token: 0x17000117 RID: 279
-			// (get) Token: 0x06000F6D RID: 3949 RVA: 0x00071B6E File Offset: 0x0006FD6E
 			public static bool IsInMacOS
 			{
 				get
@@ -1161,8 +1166,6 @@ namespace ArcadiaCustoms.Functions
 				}
 			}
 
-			// Token: 0x17000118 RID: 280
-			// (get) Token: 0x06000F6E RID: 3950 RVA: 0x00071B85 File Offset: 0x0006FD85
 			public static bool IsInWinOS
 			{
 				get
@@ -1171,7 +1174,6 @@ namespace ArcadiaCustoms.Functions
 				}
 			}
 
-			// Token: 0x06000F6F RID: 3951 RVA: 0x00071B9C File Offset: 0x0006FD9C
 			public static void OpenInMac(string path)
 			{
 				bool flag = false;
@@ -1199,7 +1201,6 @@ namespace ArcadiaCustoms.Functions
 				}
 			}
 
-			// Token: 0x06000F70 RID: 3952 RVA: 0x00071C38 File Offset: 0x0006FE38
 			public static void OpenInWin(string path)
 			{
 				bool flag = false;
@@ -1218,7 +1219,6 @@ namespace ArcadiaCustoms.Functions
 				}
 			}
 
-			// Token: 0x06000F71 RID: 3953 RVA: 0x00071CA4 File Offset: 0x0006FEA4
 			public static void Open(string path)
 			{
 				if (RTFile.OpenInFileBrowser.IsInWinOS)

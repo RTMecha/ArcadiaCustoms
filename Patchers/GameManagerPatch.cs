@@ -100,8 +100,15 @@ namespace ArcadiaCustoms.Patchers
 		{
 			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
 			{
+				//Figure out which of the three below lines of code causes the pause continue bug.
+				//-------------------------------------------------------------------------------
+				AudioManager.inst.CurrentAudioSource.Pause();
+				AudioManager.inst.CurrentAudioSource.clip = _song;
+				ObjectManager.inst.StartCoroutine(RTFile.IupdateObjects());
+				//-------------------------------------------------------------------------------
 				__instance.Camera.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
 				__instance.CameraPerspective.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
+				__instance.UpdateTimeline();
 				__instance.songLength = _song.length;
 				__instance.StartCoroutine(playBuffer(__instance, _song));
 				return false;
@@ -124,10 +131,6 @@ namespace ArcadiaCustoms.Patchers
 		private static IEnumerator playBuffer(GameManager __instance, AudioClip _song)
 		{
 			__instance.gameState = GameManager.State.Playing;
-			AudioManager.inst.PlayMusic(null, _song, true, 0.5f, false);
-			AudioManager.inst.SetPitch(__instance.getPitch());
-
-			AudioManager.inst.CurrentAudioSource.clip = _song;
 
 			yield return new WaitForSecondsRealtime(0.2f);
 			foreach (DataManager.GameData.BeatmapObject beatmapObject in DataManager.inst.gameData.beatmapObjects)
@@ -140,9 +143,8 @@ namespace ArcadiaCustoms.Patchers
 				}
 			}
 			__instance.ResetCheckpoints();
-			yield return ObjectManager.inst.StartCoroutine(RTFile.IupdateObjects());
-			__instance.UpdateTimeline();
-			AudioManager.inst.SetMusicTime(0f);
+			AudioManager.inst.PlayMusic(null, _song, true, 0.5f, false);
+			AudioManager.inst.SetPitch(__instance.getPitch());
 
 			//Dunno how to reference delegates outside of their own class.
 			//GameManager.UpdatedAudioPos(AudioManager.inst.CurrentAudioSource.isPlaying, AudioManager.inst.CurrentAudioSource.time, AudioManager.inst.CurrentAudioSource.pitch);
@@ -295,6 +297,7 @@ namespace ArcadiaCustoms.Patchers
 
 				InterfaceController.InterfaceElement interfaceElement3 = null;
 				ArcadePlugin.current += 1;
+				Debug.LogFormat("{0}Selecting next Arcade level in queue [{1} / {2}]", ArcadePlugin.className, ArcadePlugin.current, (ArcadePlugin.arcadeQueue.Count - 1));
 				if (ArcadePlugin.arcadeQueue.Count > 1 && ArcadePlugin.current < ArcadePlugin.arcadeQueue.Count)
 				{
 					SaveManager.inst.ArcadeQueue = ArcadePlugin.arcadeQueue[ArcadePlugin.current];
