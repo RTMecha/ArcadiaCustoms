@@ -12,50 +12,34 @@ using LSFunctions;
 using DG.Tweening;
 using ArcadiaCustoms.Functions;
 
+using RTFunctions.Functions;
+
 namespace ArcadiaCustoms.Patchers
 {
 
     [HarmonyPatch(typeof(GameManager))]
     public class GameManagerPatch
     {
-		[HarmonyPatch("getPitch")]
-		public static bool getPitch(ref float __result)
-		{
-			if (EditorManager.inst != null)
-			{
-				__result = 1f;
-				return false;
-			}
-			__result = new List<float>
-			{
-				0.5f,
-				0.8f,
-				1f,
-				1.2f,
-				1.5f
-			}[Mathf.Clamp(0, DataManager.inst.GetSettingEnum("ArcadeGameSpeed", 2), 4)];
-			return false;
-		}
-
 		[HarmonyPatch("Start")]
         [HarmonyPostfix]
         private static void SetCameraClipPlanes()
 		{
+			ArcadePlugin.fromLevel = true;
+
 			DOTween.Clear();
 			DataManager.inst.gameData = null;
 			DataManager.inst.gameData = new DataManager.GameData();
-			Camera camera = GameObject.Find("Main Camera").GetComponent<Camera>();
-            camera.farClipPlane = 100000;
-            camera.nearClipPlane = -100000;
 
-            ArcadePlugin.inst.StartCoroutine(ArcadePlugin.FixTimeline());
-        }
+			ArcadePlugin.timeInLevel = 0f;
+			finished = false;
+			//ArcadePlugin.inst.StartCoroutine(ArcadePlugin.FixTimeline());
+		}
 
         [HarmonyPatch("Update")]
         [HarmonyPostfix]
-        private static void SetAntialiasing()
+        private static void SetAntialiasing(GameManager __instance)
         {
-            if (GameManager.inst != null && DataManager.inst.gameData.beatmapData != null)
+            if (DataManager.inst.gameData.beatmapData != null)
             {
                 PostProcessLayer aliasing = GameObject.Find("Main Camera").GetComponent<PostProcessLayer>();
                 if (ArcadePlugin.AntiAliasing.Value == true)
@@ -68,14 +52,19 @@ namespace ArcadiaCustoms.Patchers
                 }
             }
 
-            if (GameManager.inst.LiveTheme.objectColors.Count == 9)
+            if (__instance.LiveTheme.objectColors.Count == 9)
             {
                 for (int i = 0; i < 9; i++)
                 {
-                    GameManager.inst.LiveTheme.objectColors.Add(LSColors.pink900);
+					__instance.LiveTheme.objectColors.Add(LSColors.pink900);
                 }
             }
+
+			if (!finished)
+				ArcadePlugin.timeInLevel = Time.time;
         }
+
+		public static bool finished = false;
 
         [HarmonyPatch("LoadLevelCurrent")]
         [HarmonyPrefix]
@@ -104,7 +93,7 @@ namespace ArcadiaCustoms.Patchers
 				//-------------------------------------------------------------------------------
 				AudioManager.inst.CurrentAudioSource.Pause();
 				AudioManager.inst.CurrentAudioSource.clip = _song;
-				ObjectManager.inst.StartCoroutine(RTFile.IupdateObjects());
+				ObjectManager.inst.updateObjects();
 				//-------------------------------------------------------------------------------
 				__instance.Camera.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
 				__instance.CameraPerspective.GetComponent<Camera>().rect = new Rect(0f, 0f, 1f, 1f);
@@ -150,6 +139,9 @@ namespace ArcadiaCustoms.Patchers
 			//GameManager.UpdatedAudioPos(AudioManager.inst.CurrentAudioSource.isPlaying, AudioManager.inst.CurrentAudioSource.time, AudioManager.inst.CurrentAudioSource.pitch);
 			__instance.introAnimator.SetTrigger("play");
 			__instance.SpawnPlayers(DataManager.inst.gameData.beatmapData.checkpoints[0].pos);
+			yield return new WaitForSeconds(0.2f);
+			EventManager.inst.updateEvents();
+			
 			yield break;
 		}
 
@@ -157,36 +149,54 @@ namespace ArcadiaCustoms.Patchers
 		[HarmonyPrefix]
 		private static bool EndOfLevelPatch(GameManager __instance)
 		{
+			finished = true;
 			AudioManager.inst.CurrentAudioSource.Pause();
 			GameManager.inst.players.SetActive(false);
 			InputDataManager.inst.SetAllControllerRumble(0f);
+
+			AudioManager.inst.CurrentAudioSource.time = 0f;
+			AudioManager.inst.CurrentAudioSource.Play();
+
 			__instance.gameState = GameManager.State.Paused;
 			__instance.timeline.gameObject.SetActive(false);
 			__instance.menuUI.GetComponentInChildren<Image>().enabled = true;
+
+			var ic = __instance.menuUI.GetComponent<InterfaceController>();
+
 			if (DataManager.inst.GetSettingBool("IsArcade", false))
 			{
 				int workshop_id = __instance.currentArcadeLevel.beatmap.workshop_id;
 				int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(workshop_id) ? SaveManager.inst.ArcadeSaves[workshop_id].Hits.Count : -1;
-				if (SaveManager.inst.ArcadeSaves.ContainsKey(workshop_id))
-				{
-					if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
+
+				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
+                {
+					SaveManager.SaveGroup.Save save = null;
+					if (SaveManager.inst.ArcadeSaves.ContainsKey(workshop_id))
+						save = SaveManager.inst.ArcadeSaves[workshop_id];
+					else
 					{
-						SaveManager.inst.ArcadeSaves[workshop_id].Deaths = __instance.deaths;
-						SaveManager.inst.ArcadeSaves[workshop_id].Hits = __instance.hits;
-						SaveManager.inst.ArcadeSaves[workshop_id].Finished = true;
+						save = new SaveManager.SaveGroup.Save();
+						SaveManager.inst.ArcadeSaves.Add(workshop_id, save);
+						save.LevelID = workshop_id;
 					}
+
+					save.Deaths = __instance.deaths;
+					save.Hits = __instance.hits;
+					save.Finished = true;
 				}
-				else if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
-				{
-					SaveManager.inst.ArcadeSaves.Add(workshop_id, new SaveManager.SaveGroup.Save());
-					SaveManager.inst.ArcadeSaves[workshop_id].LevelID = workshop_id;
-					SaveManager.inst.ArcadeSaves[workshop_id].Deaths = __instance.deaths;
-					SaveManager.inst.ArcadeSaves[workshop_id].Hits = __instance.hits;
-					SaveManager.inst.ArcadeSaves[workshop_id].Finished = true;
+
+				//More Info
+                {
+					var moreInfo = ic.interfaceBranches.Find(x => x.name == "end_of_level_more_info");
+					moreInfo.elements[5] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You died a total of " + __instance.deaths.Count + " times.", "end_of_level_more_info");
+					moreInfo.elements[6] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You got hit a total of " + __instance.hits.Count + " times.", "end_of_level_more_info");
+					moreInfo.elements[7] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Total song time: " + AudioManager.inst.CurrentAudioSource.clip.length, "end_of_level_more_info");
+					moreInfo.elements[8] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Time in level: " + ArcadePlugin.timeInLevel, "end_of_level_more_info");
 				}
-				int index = __instance.menuUI.GetComponent<InterfaceController>().interfaceBranches.FindIndex((InterfaceController.InterfaceBranch x) => x.name == "end_of_level");
-				int index2 = __instance.menuUI.GetComponent<InterfaceController>().interfaceBranches.FindIndex((InterfaceController.InterfaceBranch x) => x.name == "getsong");
-				int index3 = __instance.menuUI.GetComponent<InterfaceController>().interfaceBranches.FindIndex((InterfaceController.InterfaceBranch x) => x.name == "end_of_level_more_info");
+
+				int index = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level");
+				int index2 = ic.interfaceBranches.FindIndex(x => x.name == "getsong");
+				int index3 = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level_more_info");
 				int num = 5;
 				int num2 = 24;
 				int num3 = 2;
@@ -198,8 +208,8 @@ namespace ArcadiaCustoms.Patchers
 					Debug.Log(num5);
 					hitsNormalized[num5]++;
 				}
-				DataManager.LevelRank levelRank = DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => hitsNormalized.Sum() >= x.minHits && hitsNormalized.Sum() <= x.maxHits);
-				DataManager.LevelRank levelRank2 = DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
+				var levelRank = DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => hitsNormalized.Sum() >= x.minHits && hitsNormalized.Sum() <= x.maxHits);
+				var levelRank2 = DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
 				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) == 0)
 				{
 					levelRank = DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => x.name == "-");
@@ -213,7 +223,7 @@ namespace ArcadiaCustoms.Patchers
 				{
 					SteamWrapper.inst.achievements.SetAchievement("F_RANK");
 				}
-				List<string> list = LSText.WordWrap(levelRank.sayings[UnityEngine.Random.Range(0, levelRank.sayings.Length)], 32);
+				List<string> list = LSText.WordWrap(levelRank.sayings[Random.Range(0, levelRank.sayings.Length)], 32);
 				string themeColorHex = LSColors.GetThemeColorHex("easy");
 				string themeColorHex2 = LSColors.GetThemeColorHex("normal");
 				string themeColorHex3 = LSColors.GetThemeColorHex("hard");
@@ -293,7 +303,7 @@ namespace ArcadiaCustoms.Patchers
 				}
 				InterfaceController.InterfaceElement interfaceElement2 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, string.Format("Level Summary - <b>{0}</b> by {1}", __instance.currentArcadeLevel.song.title, __instance.currentArcadeLevel.artist.Name));
 				interfaceElement2.branch = "end_of_level";
-				__instance.menuUI.GetComponent<InterfaceController>().interfaceBranches[index].elements[2] = interfaceElement2;
+				ic.interfaceBranches[index].elements[2] = interfaceElement2;
 
 				InterfaceController.InterfaceElement interfaceElement3 = null;
 				ArcadePlugin.current += 1;
@@ -316,17 +326,17 @@ namespace ArcadiaCustoms.Patchers
 				__instance.menuUI.GetComponent<InterfaceController>().interfaceBranches[index].elements[17] = interfaceElement3;
 				InterfaceController.InterfaceElement interfaceElement4 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "openlink::" + __instance.currentArcadeLevel.artist.getUrl());
 				interfaceElement4.branch = "getsong";
-				__instance.menuUI.GetComponent<InterfaceController>().interfaceBranches[index2].elements[0] = interfaceElement4;
-				__instance.menuUI.GetComponent<InterfaceController>().interfaceBranches[index3].elements[5] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "More info to come soon!", "end_of_level_more_info");
-				__instance.menuUI.GetComponent<InterfaceController>().SwitchBranch("end_of_level");
+				ic.interfaceBranches[index2].elements[0] = interfaceElement4;
+				//ic.interfaceBranches[index3].elements[5] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "More info to come soon!", "end_of_level_more_info");
+				ic.SwitchBranch("end_of_level");
 
 				var interfaceBranch = new InterfaceController.InterfaceBranch("next");
 				interfaceBranch.elements.Add(new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "loadscene::Game::true", "next"));
-				__instance.menuUI.GetComponent<InterfaceController>().interfaceBranches.Add(interfaceBranch);
+				ic.interfaceBranches.Add(interfaceBranch);
 
 				return false;
 			}
-			__instance.menuUI.GetComponent<InterfaceController>().SwitchBranch("end_of_level");
+			ic.SwitchBranch("end_of_level");
 			return false;
 		}
 	}

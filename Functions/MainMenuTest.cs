@@ -16,6 +16,8 @@ using DG.Tweening;
 using InControl;
 using TMPro;
 
+using RTFunctions.Functions;
+
 namespace ArcadiaCustoms.Functions
 {
     public class MainMenuTest : MonoBehaviour
@@ -36,6 +38,7 @@ namespace ArcadiaCustoms.Functions
         public static float screenScaleInverse;
         public static Material fontMaterial;
         public static GameObject textMeshPro;
+        public static bool onlyShowQueue = false;
 
         private void Awake()
         {
@@ -71,10 +74,6 @@ namespace ArcadiaCustoms.Functions
             LSHelpers.ShowCursor();
             yield return inst.StartCoroutine(DeleteComponents());
 
-            var  findFolder = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
-                                where x.name == "folder"
-                                select x).ToList();
-
             var findButton = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
                               where x.name == "Text Element"
                               select x).ToList();
@@ -82,14 +81,7 @@ namespace ArcadiaCustoms.Functions
             textMeshPro = findButton[0].transform.GetChild(1).gameObject;
             fontMaterial = findButton[0].transform.GetChild(1).GetComponent<TextMeshProUGUI>().fontMaterial;
 
-            if (findFolder.Count > 0)
-            {
-                inconsolataFont = findFolder[0].transform.GetChild(0).GetComponent<Text>().font;
-            }
-            else
-            {
-                inconsolataFont = Font.GetDefault();
-            }
+            inconsolataFont = Font.GetDefault();
 
             levelFolder = FolderButton();
 
@@ -120,6 +112,7 @@ namespace ArcadiaCustoms.Functions
             levelWindow.name = "folderLooker";
             Destroy(levelWindow.GetComponent<Button>());
             levelWindow.GetComponent<Image>().color = new Color(0.3106f, 0.2906f, 0.3506f, 1f);
+            levelWindow.transform.localScale = Vector3.one * screenScale;
 
             //Artist
             {
@@ -212,6 +205,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "play";
+                playButton.transform.localScale = Vector3.one * screenScale;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[PLAY]";
                 play.fontSize = 20;
@@ -241,6 +235,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "add";
+                playButton.transform.localScale = Vector3.one * screenScale;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[ADD TO QUEUE]";
                 play.fontSize = 20;
@@ -263,6 +258,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "get song";
+                playButton.transform.localScale = Vector3.one * screenScale;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[GET SONG]";
                 play.fontSize = 20;
@@ -285,6 +281,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "settings";
+                playButton.transform.localScale = Vector3.one * screenScale;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[SETTINGS]";
                 play.fontSize = 20;
@@ -339,10 +336,7 @@ namespace ArcadiaCustoms.Functions
             //refresh.GetComponent<RectTransform>().anchoredPosition = new Vector2(560f, 832f);
 
             searchField = levelList.transform.Find("search-box/search").GetComponent<InputField>();
-            searchField.onValueChanged.m_Calls.m_ExecutingCalls.Clear();
-            searchField.onValueChanged.m_Calls.m_PersistentCalls.Clear();
-            searchField.onValueChanged.m_PersistentCalls.m_Calls.Clear();
-            searchField.onValueChanged.RemoveAllListeners();
+            searchField.onValueChanged.ClearAll();
             searchField.onValueChanged.AddListener(delegate (string _val)
             {
                 searchTerm = _val;
@@ -401,39 +395,45 @@ namespace ArcadiaCustoms.Functions
             settingsWindow.name = "settings";
             Destroy(settingsWindow.GetComponent<Button>());
             settingsWindow.GetComponent<Image>().color = new Color(0.3106f, 0.2906f, 0.3506f, 1f);
+            settingsWindow.transform.localScale = Vector3.one * screenScale;
 
             var settingsName = settingsWindow.transform.Find("folder-name").GetComponent<TextMeshProUGUI>();
             settingsName.text = "Settings";
             settingsName.alignment = TextAlignmentOptions.Center;
             settingsName.fontSize = 26;
             settingsWindow.transform.Find("folder-name").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 45f);
+            settingsName.transform.localScale = Vector3.one * screenScale;
 
             var difficultyName = Instantiate(settingsName);
             difficultyName.transform.SetParent(settingsWindow.transform);
             difficultyName.GetComponent<TextMeshProUGUI>().text = "[DIFFICULTY]";
             difficultyName.name = "difficulty-name";
             difficultyName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-247f, 15f);
+            difficultyName.transform.localScale = Vector3.one * screenScale;
 
             var speedName = Instantiate(settingsName);
             speedName.transform.SetParent(settingsWindow.transform);
             speedName.GetComponent<TextMeshProUGUI>().text = "[SPEED MULT]";
             speedName.name = "speed-name";
             speedName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-80f, 15f);
+            speedName.transform.localScale = Vector3.one * screenScale;
 
             var sooon1Name = Instantiate(settingsName);
             sooon1Name.transform.SetParent(settingsWindow.transform);
             sooon1Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
             sooon1Name.name = "soon1-name";
             sooon1Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(87f, 15f);
+            sooon1Name.transform.localScale = Vector3.one * screenScale;
 
             var sooon2Name = Instantiate(settingsName);
             sooon2Name.transform.SetParent(settingsWindow.transform);
             sooon2Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
             sooon2Name.name = "soon2-name";
             sooon2Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(254f, 15f);
+            sooon2Name.transform.localScale = Vector3.one * screenScale;
 
             var settingsbuttons = new GameObject("buttons");
-            settingsbuttons.transform.localScale = Vector3.one;
+            settingsbuttons.transform.localScale = Vector3.one * screenScale;
             settingsbuttons.transform.SetParent(settingsWindow.transform);
             var settingsbuttonsRT = settingsbuttons.AddComponent<RectTransform>();
             var settingsgridLayout = settingsbuttons.AddComponent<GridLayoutGroup>();
@@ -449,6 +449,7 @@ namespace ArcadiaCustoms.Functions
             {
                 var difficulty = GenerateUIDropdown("difficulty", settingsbuttons.transform);
                 var difficultyDD = (Dropdown)difficulty["Dropdown"];
+                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one * screenScale;
                 difficultyDD.options = new List<Dropdown.OptionData>
                 {
                     new Dropdown.OptionData("Zen"),
@@ -469,24 +470,28 @@ namespace ArcadiaCustoms.Functions
             {
                 var difficulty = GenerateUIDropdown("speed", settingsbuttons.transform);
                 var difficultyDD = (Dropdown)difficulty["Dropdown"];
+                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one * screenScale;
                 difficultyDD.options = new List<Dropdown.OptionData>
                 {
+                    new Dropdown.OptionData("x0.1"),
                     new Dropdown.OptionData("x0.5"),
                     new Dropdown.OptionData("x0.8"),
                     new Dropdown.OptionData("x1.0"),
                     new Dropdown.OptionData("x1.2"),
                     new Dropdown.OptionData("x1.5"),
+                    new Dropdown.OptionData("x2.0"),
+                    new Dropdown.OptionData("x3.0"),
                 };
 
                 difficultyDD.onValueChanged.RemoveAllListeners();
-                difficultyDD.value = DataManager.inst.GetSettingEnum("ArcadeGameSpeed", 2);
+                difficultyDD.value = DataManager.inst.GetSettingEnum("ArcadeGameSpeed", 3);
                 difficultyDD.onValueChanged.AddListener(delegate (int _val)
                 {
                     DataManager.inst.UpdateSettingEnum("ArcadeGameSpeed", _val);
-                    AudioManager.inst.SetPitch(getPitch());
+                    AudioManager.inst.SetPitch(RTHelpers.getPitch());
                     if (videoPlayer.source != VideoSource.VideoClip)
                     {
-                        videoPlayer.playbackSpeed = getPitch();
+                        videoPlayer.playbackSpeed = RTHelpers.getPitch();
                     }
                 });
             }
@@ -527,14 +532,6 @@ namespace ArcadiaCustoms.Functions
         public static void RevealSettings()
         {
             settingsWindow.transform.DOLocalMove(new Vector3(500f, -480f, 0f), 1f).SetEase(DataManager.inst.AnimationList[3].Animation);
-        }
-
-        public static void GenerateSecretMessage()
-        {
-            var secret = Instantiate(levelFolder.transform.GetChild(0).gameObject);
-            secret.transform.localScale = Vector3.one;
-            secret.transform.SetParent(menuUI.transform);
-            secret.GetComponent<Renderer>().material.DOColor(new Color(1f, 1f, 1f, 0f), 2f);
         }
 
         public static Color offWhite = new Color(0.8679f, 0.86f, 0.9f, 1f);
@@ -722,7 +719,7 @@ namespace ArcadiaCustoms.Functions
                     difficultyName = "animation";
                 }
 
-                if (level.metaData.artist.Name.ToLower().Contains(searchTerm.ToLower()) || level.metaData.song.title.ToLower().Contains(searchTerm.ToLower()) || searchTerm == null || !(searchTerm != "") || difficultyName.Contains(searchTerm.ToLower()))
+                if ((onlyShowQueue && ArcadePlugin.arcadeQueue.Find(x => x.MetaData.beatmap.workshop_id == level.metaData.beatmap.workshop_id) != null || !onlyShowQueue) && level.metaData.artist.Name.ToLower().Contains(searchTerm.ToLower()) || level.metaData.song.title.ToLower().Contains(searchTerm.ToLower()) || searchTerm == null || !(searchTerm != "") || difficultyName.Contains(searchTerm.ToLower()))
                 {
                     int itemID = level.itemID;
                     var tmpLevel = level;
@@ -733,7 +730,7 @@ namespace ArcadiaCustoms.Functions
                     if (gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>())
                     {
                         var text = gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
-                        text.text = string.Format("{0} - {1}", level.metaData.artist.Name, level.metaData.song.title);
+                        text.text = string.Format("{0}</color> - {1}</color> By {2}", level.metaData.artist.Name, level.metaData.song.title, level.metaData.creator.steam_name);
                         text.alignment = TextAlignmentOptions.Left;
                         text.color = offWhite;
                         text.fontSize = 26;
@@ -744,12 +741,14 @@ namespace ArcadiaCustoms.Functions
                     else
                     {
                         var text = gameObject.transform.GetChild(0).GetComponent<Text>();
-                        text.text = string.Format("{0} - {1}", level.metaData.artist.Name, level.metaData.song.title);
+                        text.text = string.Format("{0} - {1} By {2}", level.metaData.artist.Name, level.metaData.song.title, level.metaData.creator.steam_name);
                         text.alignment = TextAnchor.MiddleLeft;
 
                         var textRT = text.GetComponent<RectTransform>();
                         textRT.anchoredPosition = new Vector2(48f, 0f);
                     }
+
+                    gameObject.AddComponent<HoverUI>();
 
                     var button = gameObject.GetComponent<Button>();
                     button.onClick.RemoveAllListeners();
@@ -799,18 +798,6 @@ namespace ArcadiaCustoms.Functions
             levelWindow.transform.DOLocalMove(new Vector3(500f, 0f, 0f), 1f).SetEase(DataManager.inst.AnimationList[3].Animation);
         }
 
-        public static float getPitch()
-        {
-            return new List<float>
-            {
-                0.5f,
-                0.8f,
-                1f,
-                1.2f,
-                1.5f
-            }[Mathf.Clamp(0, DataManager.inst.GetSettingEnum("ArcadeGameSpeed", 2), 4)];
-        }
-
         public static void SetSelectedSong(SteamWorkshop.SteamItem _steamItem)
         {
             SaveManager.ArcadeLevel arcadeLevel = new SaveManager.ArcadeLevel("", FileManager.inst.LoadJSONFileRaw(_steamItem.folder + "\\level.lsb"), _steamItem.metaData, ArcadeManager.inst.ArcadeAudioClips[_steamItem.itemID]);
@@ -820,7 +807,7 @@ namespace ArcadiaCustoms.Functions
             AudioManager.inst.StopMusic();
             AudioManager.inst.PlayMusic(arcadeLevel.BeatmapSong.name, arcadeLevel.BeatmapSong);
             AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
-            AudioManager.inst.SetPitch(getPitch());
+            AudioManager.inst.SetPitch(RTHelpers.getPitch());
 
             if (RTFile.FileExists(_steamItem.folder + "\\preview.mp4"))
             {
@@ -828,7 +815,7 @@ namespace ArcadiaCustoms.Functions
                 {
                     videoPlayer.targetCameraAlpha = 0f;
                     inst.StartCoroutine(SetCameraAlphaFade(20));
-                    videoPlayer.playbackSpeed = getPitch();
+                    videoPlayer.playbackSpeed = RTHelpers.getPitch();
                 }
                 videoPlayer.url = _steamItem.folder + "\\preview.mp4";
                 videoPlayer.source = VideoSource.Url;
@@ -928,7 +915,7 @@ namespace ArcadiaCustoms.Functions
         public static IEnumerator GenerateOpenFilePopup()
         {
             var inter = new GameObject("Interface");
-            inter.transform.localScale = Vector3.one;
+            inter.transform.localScale = Vector3.one * screenScale;
             inter.AddComponent<SpriteManager>();
             menuUI = inter;
             var interfaceRT = inter.AddComponent<RectTransform>();
@@ -944,10 +931,13 @@ namespace ArcadiaCustoms.Functions
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.Tangent;
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.Normal;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            canvas.scaleFactor = screenScale;
 
             var canvasScaler = inter.AddComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             canvasScaler.referenceResolution = new Vector2(Screen.width, Screen.height);
+
+            Debug.LogFormat("{0}Canvas Scale Factor: {1}\nResoultion: {2}", ArcadePlugin.className, canvas.scaleFactor, new Vector2(Screen.width, Screen.height));
 
             inter.AddComponent<GraphicRaycaster>();
 
@@ -1380,7 +1370,7 @@ namespace ArcadiaCustoms.Functions
         {
             if (RTFile.FileExists(_filePath))
             {
-                SpriteManager.inst.StartCoroutine(SpriteManager.GetSprite(RTFile.GetApplicationDirectory() + _filePath, new SpriteManager.SpriteLimits(), delegate (Sprite cover)
+                SpriteManager.inst.StartCoroutine(SpriteManager.GetSprite(RTFile.ApplicationDirectory + _filePath, new SpriteManager.SpriteLimits(), delegate (Sprite cover)
                 {
                     _image.sprite = cover;
                 }, delegate (string errorFile)
@@ -1395,7 +1385,5 @@ namespace ArcadiaCustoms.Functions
             int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(_steamItem.metaData.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[_steamItem.metaData.beatmap.workshop_id].Hits.Count : -1;
             return DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
         }
-
-
     }
 }
