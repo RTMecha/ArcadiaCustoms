@@ -11,6 +11,13 @@ namespace ArcadiaCustoms.Patchers
     [HarmonyPatch(typeof(InputSelectManager))]
     public class InputSelectManagerPatch : MonoBehaviour
     {
+		[HarmonyPatch("Start")]
+		[HarmonyPrefix]
+		private static void StartPrefix()
+        {
+			InputDataManager.inst.ClearInputs(true);
+        }
+
         [HarmonyPatch("Start")]
         [HarmonyPostfix]
         private static void ResetArcadeInSelection()
