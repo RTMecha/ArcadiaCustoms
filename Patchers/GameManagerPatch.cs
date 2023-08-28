@@ -13,6 +13,8 @@ using DG.Tweening;
 using ArcadiaCustoms.Functions;
 
 using RTFunctions.Functions;
+using RTFunctions.Functions.IO;
+using RTFunctions.Functions.Managers;
 
 namespace ArcadiaCustoms.Patchers
 {
