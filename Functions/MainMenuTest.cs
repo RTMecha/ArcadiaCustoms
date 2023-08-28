@@ -17,6 +17,8 @@ using InControl;
 using TMPro;
 
 using RTFunctions.Functions;
+using RTFunctions.Functions.IO;
+using RTFunctions.Functions.Managers;
 
 namespace ArcadiaCustoms.Functions
 {
@@ -40,20 +42,25 @@ namespace ArcadiaCustoms.Functions
         public static GameObject textMeshPro;
         public static bool onlyShowQueue = false;
 
-        private void Awake()
+        void Awake()
         {
             inst = this;
             inst.StartCoroutine(ClearScene());
         }
 
-        private void Update()
+        void Update()
         {
-            screenScale = (float)Screen.width / 1920f;
-            screenScaleInverse = 1f / screenScale;
+            //screenScale = (float)Screen.width / 1920f;
+            //screenScaleInverse = 1f / screenScale;
+
+            screenScale = RTHelpers.screenScale;
+            screenScaleInverse = RTHelpers.screenScaleInverse;
+
             if (InputDataManager.inst.menuActions.Cancel.WasPressed && !LSHelpers.IsUsingInputField())
             {
                 SceneManager.inst.LoadScene("Input Select");
             }
+            LoopSongPreview();
         }
 
         public static IEnumerator DeleteComponents()
@@ -798,18 +805,41 @@ namespace ArcadiaCustoms.Functions
             levelWindow.transform.DOLocalMove(new Vector3(500f, 0f, 0f), 1f).SetEase(DataManager.inst.AnimationList[3].Animation);
         }
 
+        public static void LoopSongPreview()
+        {
+            if (AudioManager.inst.CurrentAudioSource == null)
+                return;
+
+            if (previewStart >= 0f && previewLength > 0f && AudioManager.inst.CurrentAudioSource.time > previewStart + previewLength)
+                AudioManager.inst.CurrentAudioSource.time = previewStart;
+        }
+
+        static float previewStart;
+        static float previewLength;
+
         public static void SetSelectedSong(SteamWorkshop.SteamItem _steamItem)
         {
-            SaveManager.ArcadeLevel arcadeLevel = new SaveManager.ArcadeLevel("", FileManager.inst.LoadJSONFileRaw(_steamItem.folder + "\\level.lsb"), _steamItem.metaData, ArcadeManager.inst.ArcadeAudioClips[_steamItem.itemID]);
-            arcadeLevel.AudioFileStr = _steamItem.folder + "\\level.ogg";
+            SaveManager.ArcadeLevel arcadeLevel = new SaveManager.ArcadeLevel("", FileManager.inst.LoadJSONFileRaw(_steamItem.folder + "/level.lsb"), _steamItem.metaData, ArcadeManager.inst.ArcadeAudioClips[_steamItem.itemID]);
+            arcadeLevel.AudioFileStr = _steamItem.folder + "/level.ogg";
             SaveManager.inst.ArcadeQueue = arcadeLevel;
 
             AudioManager.inst.StopMusic();
             AudioManager.inst.PlayMusic(arcadeLevel.BeatmapSong.name, arcadeLevel.BeatmapSong);
+
+            if (arcadeLevel.MetaData.song.previewStart >= 0f)
+                previewStart = arcadeLevel.MetaData.song.previewStart;
+            else
+                previewStart = UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
+
+            if (arcadeLevel.MetaData.song.previewLength > 0f)
+                previewLength = arcadeLevel.MetaData.song.previewLength;
+            else
+                previewLength = 30f;
+
             AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
             AudioManager.inst.SetPitch(RTHelpers.getPitch());
 
-            if (RTFile.FileExists(_steamItem.folder + "\\preview.mp4"))
+            if (RTFile.FileExists(_steamItem.folder + "/preview.mp4"))
             {
                 if (videoPlayer.source == VideoSource.VideoClip)
                 {
@@ -817,7 +847,7 @@ namespace ArcadiaCustoms.Functions
                     inst.StartCoroutine(SetCameraAlphaFade(20));
                     videoPlayer.playbackSpeed = RTHelpers.getPitch();
                 }
-                videoPlayer.url = _steamItem.folder + "\\preview.mp4";
+                videoPlayer.url = _steamItem.folder + "/preview.mp4";
                 videoPlayer.source = VideoSource.Url;
                 videoPlayer.time = UnityEngine.Random.Range(0, (float)videoPlayer.length);
             }
