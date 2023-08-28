@@ -27,10 +27,12 @@ using ArcadiaCustoms.Functions;
 using ArcadiaCustoms.Patchers;
 
 using RTFunctions.Functions;
+using RTFunctions.Functions.IO;
+using RTFunctions.Functions.Managers;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.5")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.7")]
     [BepInDependency("com.mecha.rtfunctions")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
@@ -297,17 +299,17 @@ namespace ArcadiaCustoms
                     num++;
                 }
 
-                if (LoadLevels.inst != null)
-                {
-                    LoadLevels.inst.End();
-                }
-
                 if (MainMenuTest.inst != null)
                 {
                     //MainMenuTest.inst.StartCoroutine(MainMenuTest.GenerateUIList());
                 }
 
                 currentlyLoading = false;
+            }
+
+            if (LoadLevels.inst != null)
+            {
+                LoadLevels.inst.End();
             }
             yield break;
         }
