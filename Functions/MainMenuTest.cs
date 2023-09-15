@@ -42,6 +42,8 @@ namespace ArcadiaCustoms.Functions
         public static GameObject textMeshPro;
         public static bool onlyShowQueue = false;
 
+        public static Scrollbar dragger;
+
         void Awake()
         {
             inst = this;
@@ -61,6 +63,14 @@ namespace ArcadiaCustoms.Functions
                 SceneManager.inst.LoadScene("Input Select");
             }
             LoopSongPreview();
+
+            if (dragger != null)
+            {
+                if (InputDataManager.inst.menuActions.Up.IsPressed)
+                    dragger.value += 0.001f * InputDataManager.inst.menuActions.Up.Value;
+                if (InputDataManager.inst.menuActions.Down.IsPressed)
+                    dragger.value -= 0.001f * InputDataManager.inst.menuActions.Down.Value;
+            }
         }
 
         public static IEnumerator DeleteComponents()
@@ -1034,6 +1044,8 @@ namespace ArcadiaCustoms.Functions
             SetRectTransform(scrollbarRT, Vector2.zero, Vector2.one, Vector2.right, new Vector2(0f, 0.5f), new Vector2(32f, 0f));
 
             var ssbar = ((GameObject)scrollbar["GameObject"]).AddComponent<Scrollbar>();
+
+            dragger = ssbar;
 
             var slidingArea = new GameObject("Sliding Area");
             slidingArea.transform.SetParent(((GameObject)scrollbar["GameObject"]).transform);
