@@ -29,6 +29,7 @@ using ArcadiaCustoms.Patchers;
 using RTFunctions.Functions;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms
 {
@@ -67,6 +68,7 @@ namespace ArcadiaCustoms
         public static bool fromLevel = false;
 
         public static float timeInLevel = 0f;
+        public static float timeInLevelOffset = 0f;
 
         private void Awake()
         {
@@ -135,9 +137,10 @@ namespace ArcadiaCustoms
         public static IEnumerator GetLevelList()
         {
             float delay = 0f;
-            if (ReloadArcadeList.Value == true && !currentlyLoading)
+            if (ReloadArcadeList.Value && !currentlyLoading)
             {
                 currentlyLoading = true;
+                fromLevel = false;
                 ArcadeManager.inst.skippedLoad = false;
                 ArcadeManager.inst.forcedSkip = false;
                 DataManager.inst.UpdateSettingBool("IsArcade", true);
@@ -231,6 +234,37 @@ namespace ArcadiaCustoms
 
                             //ArcadeManager.inst.ArcadeAudioClips.Add(steamItem.itemID, null);
                             //ArcadeManager.inst.LastAudioClip = null;
+
+                            //string fileType;
+                            //AudioType audioType;
+
+                            //if (RTFile.FileExists(steamItem.folder + "/level.ogg"))
+                            //{ fileType = "/level.ogg"; audioType = AudioType.OGGVORBIS; }
+                            //else if (RTFile.FileExists(steamItem.folder + "/level.wav"))
+                            //{ fileType = "/level.wav"; audioType = AudioType.WAV; }
+                            //else
+                            //{ fileType = "/song.lsen"; audioType = AudioType.UNKNOWN; }
+
+                            //if (RTFile.FileExists(steamItem.folder + fileType) && audioType != AudioType.UNKNOWN)
+                            //{
+                            //    yield return inst.StartCoroutine(AlephNetworkManager.DownloadAudioClip("file://" + steamItem.folder + fileType, audioType, delegate (AudioClip audioClip)
+                            //    {
+                            //        audioClip.name = steamItem.itemID.ToString();
+                            //        ArcadeManager.inst.ArcadeAudioClips.Add(steamItem.itemID, audioClip);
+                            //        ArcadeManager.inst.LastAudioClip = audioClip;
+                            //    }));
+                            //}
+                            //else if (RTFile.FileExists(steamItem.folder + fileType))
+                            //{
+                            //    yield return inst.StartCoroutine(DecryptLevel(steamItem.folder + "/", delegate (AudioClip _song)
+                            //    {
+                            //        _song.name = steamItem.itemID.ToString();
+                            //        ArcadeManager.inst.ArcadeAudioClips.Add(steamItem.itemID, _song);
+                            //        ArcadeManager.inst.LastAudioClip = _song;
+                            //    }));
+                            //}
+
+                            // Old audio code
                             if (File.Exists(steamItem.folder + "/level.ogg"))
                             {
                                 ArcadeManager.inst.StartCoroutine(FileManager.inst.LoadMusicFileRaw(steamItem.folder + "/level.ogg", true, delegate (AudioClip _song)
@@ -259,6 +293,7 @@ namespace ArcadiaCustoms
                                 }));
                             }
 
+                            // Old jpg code
                             //ArcadeManager.inst.StartCoroutine(FileManager.inst.LoadImageFileRaw(steamItem.folder + "/level.jpg", delegate (Sprite _cover)
                             //{
                             //    ArcadeManager.inst.ArcadeImageFiles.Add(steamItem.itemID, _cover);
@@ -306,6 +341,7 @@ namespace ArcadiaCustoms
 
                 currentlyLoading = false;
             }
+            else if (!ReloadArcadeList.Value) SceneManager.inst.LoadScene("Main Menu");
 
             if (LoadLevels.inst != null)
             {
