@@ -15,6 +15,8 @@ using ArcadiaCustoms.Functions;
 using RTFunctions.Functions;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.Animation;
+using RTFunctions.Functions.Animation.Keyframe;
 
 namespace ArcadiaCustoms.Patchers
 {
@@ -32,6 +34,7 @@ namespace ArcadiaCustoms.Patchers
 			DataManager.inst.gameData = null;
 			DataManager.inst.gameData = new DataManager.GameData();
 
+			ArcadePlugin.timeInLevelOffset = Time.time;
 			ArcadePlugin.timeInLevel = 0f;
 			finished = false;
 			//ArcadePlugin.inst.StartCoroutine(ArcadePlugin.FixTimeline());
@@ -63,7 +66,7 @@ namespace ArcadiaCustoms.Patchers
             }
 
 			if (!finished)
-				ArcadePlugin.timeInLevel = Time.time;
+				ArcadePlugin.timeInLevel = ArcadePlugin.timeInLevelOffset - Time.time;
         }
 
 		public static bool finished = false;
@@ -87,7 +90,7 @@ namespace ArcadiaCustoms.Patchers
 
 		[HarmonyPatch("PlayLevel")]
 		[HarmonyPrefix]
-		private static bool PlayLevel(GameManager __instance, AudioClip _song)
+		static bool PlayLevel(GameManager __instance, AudioClip _song)
 		{
 			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
 			{
@@ -109,7 +112,7 @@ namespace ArcadiaCustoms.Patchers
 
 		[HarmonyPatch("playBuffer")]
 		[HarmonyPrefix]
-		private static bool playBufferPrefix(GameManager __instance, ref IEnumerator __result, AudioClip __0)
+		static bool playBufferPrefix(GameManager __instance, ref IEnumerator __result, AudioClip __0)
 		{
 			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
 			{
@@ -119,7 +122,7 @@ namespace ArcadiaCustoms.Patchers
 			return true;
 		}
 
-		private static IEnumerator playBuffer(GameManager __instance, AudioClip _song)
+		static IEnumerator playBuffer(GameManager __instance, AudioClip _song)
 		{
 			__instance.gameState = GameManager.State.Playing;
 
@@ -139,7 +142,14 @@ namespace ArcadiaCustoms.Patchers
 
 			//Dunno how to reference delegates outside of their own class.
 			//GameManager.UpdatedAudioPos(AudioManager.inst.CurrentAudioSource.isPlaying, AudioManager.inst.CurrentAudioSource.time, AudioManager.inst.CurrentAudioSource.pitch);
-			__instance.introAnimator.SetTrigger("play");
+
+			if (__instance.introMain != null)
+			{
+				__instance.introAnimator.SetTrigger("play");
+
+				
+			}
+
 			__instance.SpawnPlayers(DataManager.inst.gameData.beatmapData.checkpoints[0].pos);
 			yield return new WaitForSeconds(0.2f);
 			EventManager.inst.updateEvents();
