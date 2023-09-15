@@ -15,7 +15,7 @@ namespace ArcadiaCustoms.Patchers
 		[HarmonyPrefix]
 		private static void StartPrefix()
         {
-			InputDataManager.inst.ClearInputs(true);
+			InputDataManager.inst.ClearInputs();
         }
 
         [HarmonyPatch("Start")]
@@ -23,10 +23,10 @@ namespace ArcadiaCustoms.Patchers
         private static void ResetArcadeInSelection()
         {
             LSHelpers.HideCursor();
-            ArcadeManager.inst.skippedLoad = false;
-            ArcadeManager.inst.forcedSkip = false;
-			ArcadePlugin.fromLevel = false;
-			DataManager.inst.UpdateSettingBool("IsArcade", true);
+            //ArcadeManager.inst.skippedLoad = false;
+            //ArcadeManager.inst.forcedSkip = false;
+            ArcadePlugin.fromLevel = false;
+			//DataManager.inst.UpdateSettingBool("IsArcade", true);
         }
 
         [HarmonyPatch("Update")]
