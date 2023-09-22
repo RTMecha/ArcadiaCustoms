@@ -33,7 +33,7 @@ using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.7")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.4.8")]
     [BepInDependency("com.mecha.rtfunctions")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
@@ -70,7 +70,9 @@ namespace ArcadiaCustoms
         public static float timeInLevel = 0f;
         public static float timeInLevelOffset = 0f;
 
-        private void Awake()
+        public static List<SteamWorkshop.SteamItem> onlineLevels = new List<SteamWorkshop.SteamItem>();
+
+        void Awake()
         {
             inst = this;
 
@@ -95,7 +97,7 @@ namespace ArcadiaCustoms
             RTFunctions.Enums.EnumPatcher.AddEnumValue<XInputDotNetPure.PlayerIndex>("Eight");
         }
 
-        private static void UpdateSettings(object sender, EventArgs e)
+        static void UpdateSettings(object sender, EventArgs e)
         {
             if (GameManager.inst != null)
             {
