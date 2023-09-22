@@ -26,7 +26,7 @@ namespace ArcadiaCustoms.Patchers
     {
 		[HarmonyPatch("Start")]
         [HarmonyPostfix]
-        private static void SetCameraClipPlanes()
+        static void SetCameraClipPlanes()
 		{
 			ArcadePlugin.fromLevel = true;
 
@@ -42,7 +42,7 @@ namespace ArcadiaCustoms.Patchers
 
         [HarmonyPatch("Update")]
         [HarmonyPostfix]
-        private static void SetAntialiasing(GameManager __instance)
+        static void SetAntialiasing(GameManager __instance)
         {
             if (DataManager.inst.gameData.beatmapData != null)
             {
@@ -73,7 +73,7 @@ namespace ArcadiaCustoms.Patchers
 
         [HarmonyPatch("LoadLevelCurrent")]
         [HarmonyPrefix]
-        private static bool LevelDecrypter()
+        static bool LevelDecrypter()
         {
             string path = SaveManager.inst.ArcadeQueue.AudioFileStr.Replace("\\level.ogg", "/");
             Debug.LogFormat("{0}Trying to load song.lsen from (" + path + ")", ArcadePlugin.className);
@@ -114,6 +114,23 @@ namespace ArcadiaCustoms.Patchers
 		[HarmonyPrefix]
 		static bool playBufferPrefix(GameManager __instance, ref IEnumerator __result, AudioClip __0)
 		{
+			if (SaveManager.inst.ArcadeQueue != null)
+			{
+				var f = SaveManager.inst.ArcadeQueue.AudioFileStr.Replace("\\", "/").Replace("/level.ogg", "").Replace("/level.wav", "").Replace("/song.lsen", "") + "/LevelStartup.cs";
+
+				Debug.Log($"{ArcadePlugin.className}LevelStartup Path: {f}");
+
+				if (RTFile.FileExists(f))
+				{
+					var s = RTFile.ReadFromFile(f);
+
+					Debug.Log($"{ArcadePlugin.className}Startup Code: {s}");
+
+					if (!s.Contains("File."))
+						__instance.StartCoroutine(RTCode.IEvaluate(s));
+				}
+			}
+
 			if (ArcadePlugin.DifferentLoad.Value && EditorManager.inst == null)
 			{
 				__result = playBuffer(__instance, __0);
@@ -146,20 +163,18 @@ namespace ArcadiaCustoms.Patchers
 			if (__instance.introMain != null)
 			{
 				__instance.introAnimator.SetTrigger("play");
-
-				
 			}
 
 			__instance.SpawnPlayers(DataManager.inst.gameData.beatmapData.checkpoints[0].pos);
 			yield return new WaitForSeconds(0.2f);
-			EventManager.inst.updateEvents();
-			
-			yield break;
+            EventManager.inst.updateEvents();
+
+            yield break;
 		}
 
 		[HarmonyPatch("EndOfLevel")]
 		[HarmonyPrefix]
-		private static bool EndOfLevelPatch(GameManager __instance)
+		static bool EndOfLevelPatch(GameManager __instance)
 		{
 			finished = true;
 			AudioManager.inst.CurrentAudioSource.Pause();
@@ -349,6 +364,71 @@ namespace ArcadiaCustoms.Patchers
 				return false;
 			}
 			ic.SwitchBranch("end_of_level");
+			return false;
+		}
+
+		[HarmonyPatch("LoadLevelFromArcadeQueue")]
+		[HarmonyPrefix]
+		static bool LoadLevelFromArcadeQueuePrefix(GameManager __instance, ref IEnumerator __result, SaveManager.ArcadeLevel __0)
+        {
+			__result = LoadLevelFromArcadeQueue(__instance, __0);
+			return false;
+        }
+
+		public static IEnumerator LoadLevelFromArcadeQueue(GameManager __instance, SaveManager.ArcadeLevel _level)
+		{
+			string rawJSON = _level.BeatmapJsonStr;
+			AudioManager.inst.CurrentAudioSource.Pause();
+			AudioManager.inst.CurrentAudioSource.time = 0f;
+			__instance.currentArcadeLevel = _level.MetaData;
+
+			if (!string.IsNullOrEmpty(_level.AudioFileStr))
+			{
+				yield return __instance.StartCoroutine(FileManager.inst.LoadMusicFileRaw(_level.AudioFileStr, false, delegate (AudioClip _song)
+				{
+					AudioClip song = _song;
+					if (_level.BeatmapSong == null)
+					{
+						rawJSON = __instance.defaultLevel.BeatmapJson.text;
+						song = __instance.defaultLevel.BeatmapSong;
+					}
+
+					__instance.currentLevelName = _level.MetaData.song.title;
+					Debug.Log($"{ArcadePlugin.className}Loaded level from level [{_level.MetaData.song.title}]");
+					ParseLevel(__instance, DataManager.inst.gameData.UpdateBeatmap(rawJSON, _level.MetaData.beatmap.game_version), song, _level.MetaData.song.title, _level.MetaData.artist.Name);
+				}));
+			}
+			else if (_level.BeatmapSong != null)
+            {
+				AudioClip song = _level.BeatmapSong;
+
+				__instance.currentLevelName = _level.MetaData.song.title;
+				Debug.Log($"{ArcadePlugin.className}Loaded level from level [{_level.MetaData.song.title}]");
+				ParseLevel(__instance, DataManager.inst.gameData.UpdateBeatmap(rawJSON, _level.MetaData.beatmap.game_version), song, _level.MetaData.song.title, _level.MetaData.artist.Name);
+			}
+
+			yield break;
+		}
+
+		[HarmonyPatch("ParseLevel")]
+		[HarmonyPrefix]
+		static bool ParseLevel(GameManager __instance, string _rawJSON, AudioClip _song, string _songName, string _artistName)
+		{
+			__instance.gameState = GameManager.State.Parsing;
+			if (!string.IsNullOrEmpty(_rawJSON))
+			{
+				DataManager.inst.gameData.ParseBeatmap(_rawJSON);
+				DiscordController.inst.OnStateChange("Level: " + __instance.currentLevelName);
+				__instance.introTitle.text = _songName;
+				__instance.introArtist.text = _artistName;
+				PlayLevel(__instance, _song);
+				return false;
+			}
+			Debug.LogErrorFormat("{0}Null raw json for level [{1}]", new object[]
+			{
+				ArcadePlugin.className,
+				SaveManager.inst.CurrentStoryLevel.SongName
+			});
 			return false;
 		}
 	}
