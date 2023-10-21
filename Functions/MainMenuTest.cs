@@ -19,6 +19,7 @@ using TMPro;
 using RTFunctions.Functions;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms.Functions
 {
@@ -122,6 +123,7 @@ namespace ArcadiaCustoms.Functions
 
             levelWindow = Instantiate(levelFolder);
             levelWindow.transform.SetParent(menuUI.transform);
+            levelWindow.transform.localScale = Vector3.one;
             var levelWindowRT = levelWindow.GetComponent<RectTransform>();
             levelWindowRT.anchoredPosition = new Vector2(2360f, 540f);
             levelWindowRT.sizeDelta = new Vector2(696f, 840f);
@@ -205,8 +207,8 @@ namespace ArcadiaCustoms.Functions
             }
 
             var buttons = new GameObject("buttons");
-            buttons.transform.localScale = Vector3.one;
             buttons.transform.SetParent(levelWindow.transform);
+            buttons.transform.localScale = Vector3.one;
             var buttonsRT = buttons.AddComponent<RectTransform>();
             var gridLayout = buttons.AddComponent<GridLayoutGroup>();
 
@@ -222,7 +224,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "play";
-                playButton.transform.localScale = Vector3.one * screenScale;
+                playButton.transform.localScale = Vector3.one;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[PLAY]";
                 play.fontSize = 20;
@@ -252,7 +254,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "add";
-                playButton.transform.localScale = Vector3.one * screenScale;
+                playButton.transform.localScale = Vector3.one;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[ADD TO QUEUE]";
                 play.fontSize = 20;
@@ -275,7 +277,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "get song";
-                playButton.transform.localScale = Vector3.one * screenScale;
+                playButton.transform.localScale = Vector3.one;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[GET SONG]";
                 play.fontSize = 20;
@@ -298,7 +300,7 @@ namespace ArcadiaCustoms.Functions
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(buttons.transform);
                 playButton.name = "settings";
-                playButton.transform.localScale = Vector3.one * screenScale;
+                playButton.transform.localScale = Vector3.one;
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[SETTINGS]";
                 play.fontSize = 20;
@@ -412,46 +414,46 @@ namespace ArcadiaCustoms.Functions
             settingsWindow.name = "settings";
             Destroy(settingsWindow.GetComponent<Button>());
             settingsWindow.GetComponent<Image>().color = new Color(0.3106f, 0.2906f, 0.3506f, 1f);
-            settingsWindow.transform.localScale = Vector3.one * screenScale;
+            settingsWindow.transform.localScale = Vector3.one;
 
             var settingsName = settingsWindow.transform.Find("folder-name").GetComponent<TextMeshProUGUI>();
             settingsName.text = "Settings";
             settingsName.alignment = TextAlignmentOptions.Center;
             settingsName.fontSize = 26;
             settingsWindow.transform.Find("folder-name").GetComponent<RectTransform>().anchoredPosition = new Vector2(0f, 45f);
-            settingsName.transform.localScale = Vector3.one * screenScale;
+            settingsName.transform.localScale = Vector3.one;
 
             var difficultyName = Instantiate(settingsName);
             difficultyName.transform.SetParent(settingsWindow.transform);
+            difficultyName.transform.localScale = Vector3.one;
             difficultyName.GetComponent<TextMeshProUGUI>().text = "[DIFFICULTY]";
             difficultyName.name = "difficulty-name";
             difficultyName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-247f, 15f);
-            difficultyName.transform.localScale = Vector3.one * screenScale;
 
             var speedName = Instantiate(settingsName);
             speedName.transform.SetParent(settingsWindow.transform);
+            speedName.transform.localScale = Vector3.one;
             speedName.GetComponent<TextMeshProUGUI>().text = "[SPEED MULT]";
             speedName.name = "speed-name";
             speedName.GetComponent<RectTransform>().anchoredPosition = new Vector2(-80f, 15f);
-            speedName.transform.localScale = Vector3.one * screenScale;
 
             var sooon1Name = Instantiate(settingsName);
             sooon1Name.transform.SetParent(settingsWindow.transform);
+            sooon1Name.transform.localScale = Vector3.one;
             sooon1Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
             sooon1Name.name = "soon1-name";
             sooon1Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(87f, 15f);
-            sooon1Name.transform.localScale = Vector3.one * screenScale;
 
             var sooon2Name = Instantiate(settingsName);
             sooon2Name.transform.SetParent(settingsWindow.transform);
+            sooon2Name.transform.localScale = Vector3.one;
             sooon2Name.GetComponent<TextMeshProUGUI>().text = "[COMING SOON]";
             sooon2Name.name = "soon2-name";
             sooon2Name.GetComponent<RectTransform>().anchoredPosition = new Vector2(254f, 15f);
-            sooon2Name.transform.localScale = Vector3.one * screenScale;
 
             var settingsbuttons = new GameObject("buttons");
-            settingsbuttons.transform.localScale = Vector3.one * screenScale;
             settingsbuttons.transform.SetParent(settingsWindow.transform);
+            settingsbuttons.transform.localScale = Vector3.one;
             var settingsbuttonsRT = settingsbuttons.AddComponent<RectTransform>();
             var settingsgridLayout = settingsbuttons.AddComponent<GridLayoutGroup>();
 
@@ -466,7 +468,7 @@ namespace ArcadiaCustoms.Functions
             {
                 var difficulty = GenerateUIDropdown("difficulty", settingsbuttons.transform);
                 var difficultyDD = (Dropdown)difficulty["Dropdown"];
-                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one * screenScale;
+                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one;
                 difficultyDD.options = new List<Dropdown.OptionData>
                 {
                     new Dropdown.OptionData("Zen"),
@@ -487,7 +489,7 @@ namespace ArcadiaCustoms.Functions
             {
                 var difficulty = GenerateUIDropdown("speed", settingsbuttons.transform);
                 var difficultyDD = (Dropdown)difficulty["Dropdown"];
-                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one * screenScale;
+                ((GameObject)difficulty["GameObject"]).transform.localScale = Vector3.one;
                 difficultyDD.options = new List<Dropdown.OptionData>
                 {
                     new Dropdown.OptionData("x0.1"),
@@ -520,6 +522,7 @@ namespace ArcadiaCustoms.Functions
             {
                 var playButton = Instantiate(levelFolder);
                 playButton.transform.SetParent(menuUI.transform);
+                playButton.transform.localScale = Vector3.one;
                 playButton.name = "back";
                 var play = playButton.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
                 play.text = "[RETURN]";
@@ -972,6 +975,7 @@ namespace ArcadiaCustoms.Functions
             canvas.additionalShaderChannels = AdditionalCanvasShaderChannels.Normal;
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             canvas.scaleFactor = screenScale;
+            canvas.sortingOrder = 10000;
 
             var canvasScaler = inter.AddComponent<CanvasScaler>();
             canvasScaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -1426,6 +1430,83 @@ namespace ArcadiaCustoms.Functions
         {
             int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(_steamItem.metaData.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[_steamItem.metaData.beatmap.workshop_id].Hits.Count : -1;
             return DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
+        }
+
+        public static string publishedLevels;
+
+        public static string DriveDirect => "https://drive.google.com/uc?export=download&id=";
+        public static string DailyCover => "1sxP3JwFlyIAy3Y6pzj7kWa_1h62eun54";
+        public static string DailyLevel => "17G9LoU28x954v82M_2Hb8qmxxRKk59hq";
+        public static string DailySong => "1Nu2j-K_btfoK5AljXLz-6YCg2P8bdIO-";
+        public static string DailyMetadata => "1kBEEWqXhHaAxn1jLFAKkNYVmmYyA0h9G";
+        public static string DailyPlayers => "1xDOT8m52kqM7pNTG0S2Ah9Ujp4FMa9kG";
+
+        public void PlayDailyLevel()
+        {
+            StartCoroutine(GetDailyLevel(delegate (SaveManager.ArcadeLevel dailyLevel)
+            {
+                if (ArcadePlugin.arcadeQueue.Count > 1)
+                {
+                    ArcadePlugin.current = 0;
+                    ArcadePlugin.arcadeQueue.Clear();
+                    ArcadePlugin.arcadeQueue.Add(dailyLevel);
+                }
+                SaveManager.inst.ArcadeQueue = dailyLevel;
+                menuUI.SetActive(false);
+                DataManager.inst.UpdateSettingBool("IsArcade", true);
+                SceneManager.inst.LoadScene("Game");
+            }));
+        }
+
+        public static IEnumerator GetDailyLevel(Action<SaveManager.ArcadeLevel> callback)
+        {
+            string beatmapJSON = "";
+
+            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadJSONFile($"{DriveDirect}{DailyLevel}", delegate (string str)
+            {
+                beatmapJSON = str;
+            }, delegate (string onError)
+            {
+                beatmapJSON = "";
+            }));
+
+            string metadataJSON = "";
+            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadJSONFile($"{DriveDirect}{DailyMetadata}", delegate (string str)
+            {
+                metadataJSON = str;
+            }, delegate (string onError)
+            {
+                metadataJSON = "";
+            }));
+
+            AudioClip audioClip = null;
+            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadAudioClip($"{DriveDirect}{DailySong}", AudioType.OGGVORBIS, delegate (AudioClip clip)
+            {
+                audioClip = clip;
+            }, delegate (string onError)
+            {
+                audioClip = null;
+            }));
+
+            if (string.IsNullOrEmpty(beatmapJSON) || string.IsNullOrEmpty(metadataJSON) || audioClip == null)
+            {
+                Debug.LogError($"{ArcadePlugin.className}Could not get daily level.");
+                yield break;
+            }
+
+            var metadata = DataManager.inst.ParseMetadata(metadataJSON, false);
+
+            var id = new Steamworks.PublishedFileId_t((ulong)metadata.beatmap.workshop_id);
+
+            var steamItem = new SteamWorkshop.SteamItem(id);
+
+            steamItem.id = id;
+            steamItem.itemID = metadata.beatmap.workshop_id;
+            steamItem.metaData = metadata;
+
+            var arcadeLevel = new SaveManager.ArcadeLevel("", beatmapJSON, metadata, audioClip);
+
+            callback(arcadeLevel);
         }
     }
 }

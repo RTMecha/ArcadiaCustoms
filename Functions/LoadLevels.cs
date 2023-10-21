@@ -90,6 +90,7 @@ namespace ArcadiaCustoms.Functions
 
             var openFilePopup = MainMenuTest.GenerateUIImage("Loading Popup", inter.transform);
             var parent = ((GameObject)openFilePopup["GameObject"]).transform;
+            parent.localScale = Vector3.one;
 
             var openFilePopupRT = (RectTransform)openFilePopup["RectTransform"];
             var zeroFive = new Vector2(0.5f, 0.5f);
@@ -117,13 +118,17 @@ namespace ArcadiaCustoms.Functions
             loadText.alignment = TextAlignmentOptions.Center;
 
             MainMenuTest.SetRectTransform((RectTransform)title["RectTransform"], new Vector2(0f, -40f), Vector2.one, Vector2.zero, new Vector2(0f, 0.5f), new Vector2(32f, 32f));
+            ((GameObject)title["GameObject"]).transform.localScale = Vector3.one;
 
             var loaderBase = MainMenuTest.GenerateUIImage("LoaderBase", parent);
             MainMenuTest.SetRectTransform((RectTransform)loaderBase["RectTransform"], new Vector2(-300f, -140f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(600f, 32f));
+            ((GameObject)loaderBase["GameObject"]).transform.localScale = Vector3.one;
 
             var loader = MainMenuTest.GenerateUIImage("Loader", ((GameObject)loaderBase["GameObject"]).transform);
             loadingBar = (RectTransform)loader["RectTransform"];
             MainMenuTest.SetRectTransform(loadingBar, new Vector2(-300f, 0f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(0f, 32f));
+
+            loadingBar.localScale = Vector3.one;
 
             ((Image)loader["Image"]).color = new Color(0.14f, 0.14f, 0.14f, 1f);
 
@@ -154,6 +159,13 @@ namespace ArcadiaCustoms.Functions
 
             loadImage.sprite = sprite;
             loadText.text = LSText.ClampString("Loading " + name, 52);
+        }
+
+        public void UpdateInfo(string name, float percentage)
+        {
+            loadingBar.sizeDelta = new Vector2(600f * percentage, 32f);
+
+            loadText.text = LSText.ClampString(name, 52);
         }
 
         public static Dictionary<string, object> GenerateUITextMeshPro(string _name, Transform _parent, bool _noFont = false)
