@@ -17,7 +17,7 @@ namespace ArcadiaCustoms.Patchers
     {
 		[HarmonyPatch("Start")]
 		[HarmonyPrefix]
-		private static bool StartPrefix()
+		static bool StartPrefix()
         {
 			Debug.LogFormat("{0}Trying to generate new arcade UI...", ArcadePlugin.className);
 			ArcadePlugin.MainMenuTester();

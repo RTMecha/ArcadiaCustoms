@@ -9,7 +9,7 @@ namespace ArcadiaCustoms.Patchers
     {
         [HarmonyPatch("Start")]
         [HarmonyPostfix]
-        private static void StartPostfix()
+        static void StartPostfix()
         {
         }
     }

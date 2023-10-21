@@ -13,14 +13,11 @@ namespace ArcadiaCustoms.Patchers
     {
 		[HarmonyPatch("Start")]
 		[HarmonyPrefix]
-		private static void StartPrefix()
-        {
-			InputDataManager.inst.ClearInputs();
-        }
+		static void StartPrefix() =>InputDataManager.inst.ClearInputs();
 
         [HarmonyPatch("Start")]
         [HarmonyPostfix]
-        private static void ResetArcadeInSelection()
+        static void ResetArcadeInSelection()
         {
             LSHelpers.HideCursor();
             //ArcadeManager.inst.skippedLoad = false;
@@ -31,7 +28,7 @@ namespace ArcadiaCustoms.Patchers
 
         [HarmonyPatch("Update")]
         [HarmonyTranspiler]
-        private static IEnumerable<CodeInstruction> ISUpdateTranspiler(IEnumerable<CodeInstruction> instruction)
+        static IEnumerable<CodeInstruction> ISUpdateTranspiler(IEnumerable<CodeInstruction> instruction)
         {
             return new CodeMatcher(instruction)
                 .Start()
@@ -43,7 +40,7 @@ namespace ArcadiaCustoms.Patchers
 
 		[HarmonyPatch("loadStrings")]
 		[HarmonyPrefix]
-		private static bool loadStringsPrefix(InputSelectManager __instance, ref int ___randomLength)
+		static bool loadStringsPrefix(InputSelectManager __instance, ref int ___randomLength)
 		{
 			__instance.randomStrings.Clear();
 			for (int i = 0; i < 8; i++)
@@ -63,14 +60,14 @@ namespace ArcadiaCustoms.Patchers
 
 		[HarmonyPatch("canChange")]
 		[HarmonyPrefix]
-		private static bool canChangePrefix(InputSelectManager __instance, ref IEnumerator __result, ref int ___randomLength)
+		static bool canChangePrefix(InputSelectManager __instance, ref IEnumerator __result, ref int ___randomLength)
         {
 			__result = canChange(__instance, ___randomLength);
 			return false;
         }
 
 
-		public static IEnumerator canChange(InputSelectManager __instance, int ___randomLength)
+		static IEnumerator canChange(InputSelectManager __instance, int ___randomLength)
 		{
 			for (int i = 0; i < 8; i++)
 			{
