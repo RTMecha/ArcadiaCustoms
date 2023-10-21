@@ -42,13 +42,12 @@ namespace ArcadiaCustoms
         //Somehow add the level rank to the Arcade select menu somehow.
         //Implement difficulty modes (Much like what JSaB has, but allowing for more creativity with different options rather than just "Hardcore mode")
         //Implement the shine effect when you've SS ranked a level.
-        //Possibly fixed a screen resolution issue with resolutions lower than 1920 x 1080
 
         //Update list
 
         public static ArcadePlugin inst;
         public static string className = "[<color=#F5501B>ArcadiaCustoms</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
-        private readonly Harmony harmony = new Harmony("Arcade");
+        readonly Harmony harmony = new Harmony("Arcade");
 
         public static InterfaceController ic;
         public static string beatmapsstory = "beatmaps/story";
@@ -59,6 +58,8 @@ namespace ArcadiaCustoms
         public static ConfigEntry<bool> DifferentLoad { get; set; }
 
         public static ConfigEntry<bool> PlaySoundOnHover { get; set; }
+
+        public static ConfigEntry<bool> DownloadDailyLevel { get; set; }
 
         public static bool LoadEnabled = true;
 
@@ -81,6 +82,7 @@ namespace ArcadiaCustoms
             ReloadArcadeList = Config.Bind("Arcade", "Reload list", true, "If enabled, this will reload the arcade list every time you enter the Specify Simulations screen. Make sure to turn this off if you want to quickly exit the menu.");
             DifferentLoad = Config.Bind("Game", "Music loads first", true, "If enabled, the music will be loaded first when entering a level. Having it enabled can fix issues with queue levels not breaking, but might cause the game to take a bit longer to load.");
             PlaySoundOnHover = Config.Bind("Arcade", "Hover Sound", false, "If enabled, when you hover over a button it will play the usual UI click sound.");
+            DownloadDailyLevel = Config.Bind("Arcade", "Download Showcase Level", true, "When all levels have been loaded, a \"Showcase\" level gets downloaded to beatmaps/showcase level and gets added to your list. Level will be updated every now and then.");
 
             Config.SettingChanged += new EventHandler<SettingChangedEventArgs>(UpdateSettings);
 
@@ -336,6 +338,25 @@ namespace ArcadiaCustoms
                     num++;
                 }
 
+                if (DownloadDailyLevel.Value)
+                    yield return inst.StartCoroutine(ArcadeHelper.GetDailyLevel(delegate (SteamWorkshop.SteamItem steamItem)
+                    {
+                        steamItem.itemID = num;
+                        ArcadeManager.inst.ArcadeList.Add(steamItem);
+                    }, delegate (Sprite sprite)
+                    {
+                        if (!ArcadeManager.inst.ArcadeImageFiles.ContainsKey(num))
+                            ArcadeManager.inst.ArcadeImageFiles.Add(num, sprite);
+                        else
+                            Debug.LogError($"{className}Whoops.");
+                    }, delegate (AudioClip audioClip)
+                    {
+                        if (!ArcadeManager.inst.ArcadeAudioClips.ContainsKey(num))
+                            ArcadeManager.inst.ArcadeAudioClips.Add(num, audioClip);
+                        else
+                            Debug.LogError($"{className}Whoops.");
+                    }));
+
                 if (MainMenuTest.inst != null)
                 {
                     //MainMenuTest.inst.StartCoroutine(MainMenuTest.GenerateUIList());
@@ -432,7 +453,7 @@ namespace ArcadiaCustoms
 
         [HarmonyPatch(typeof(InterfaceController), "Update")]
         [HarmonyPostfix]
-        private static void ICUpdate(InterfaceController __instance)
+        static void ICUpdate(InterfaceController __instance)
         {
             ApplyMenuTheme(__instance);
         }
