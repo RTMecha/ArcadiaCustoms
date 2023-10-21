@@ -126,7 +126,7 @@ namespace ArcadiaCustoms.Patchers
 
 					Debug.Log($"{ArcadePlugin.className}Startup Code: {s}");
 
-					if (!s.Contains("File."))
+					if (!s.Contains("File.") && !s.Contains("Application.Quit"))
 						__instance.StartCoroutine(RTCode.IEvaluate(s));
 				}
 			}
