@@ -1,10 +1,10 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>ArcadiaCustoms</AssemblyName>
     <Description>The custom arcade mod for Project Arrhythmia that allows users to play levels that aren't on the Steam Workshop.</Description>
-    <Version>1.6.0</Version>
+    <Version>1.6.1</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
