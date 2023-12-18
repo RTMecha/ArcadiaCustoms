@@ -348,6 +348,8 @@ namespace ArcadiaCustoms.Functions
             refresh.onClick.AddListener(delegate ()
             {
                 inst.StartCoroutine(GenerateUIList());
+                var menu = new GameObject("Load Level System");
+                menu.AddComponent<LoadLevels>();
             });
             //refresh.GetComponent<RectTransform>().anchoredPosition = new Vector2(560f, 832f);
 
@@ -554,144 +556,57 @@ namespace ArcadiaCustoms.Functions
 
         public static void SortSongs()
         {
-            //Cover
-            if (levelFilter == 0 && levelAscend == false)
+            switch (levelFilter)
             {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby ArcadeManager.inst.ArcadeImageFiles[x.itemID] != SteamWorkshop.inst.defaultSteamImageSprite descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 0 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby ArcadeManager.inst.ArcadeImageFiles[x.itemID] != SteamWorkshop.inst.defaultSteamImageSprite ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Artist
-            if (levelFilter == 1 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.artist.Name descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 1 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.artist.Name ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Creator
-            if (levelFilter == 2 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.creator.steam_name descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 2 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.creator.steam_name ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Folder
-            if (levelFilter == 3 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.folder descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 3 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.folder ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Title
-            if (levelFilter == 4 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.song.title descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 4 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.song.title ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Difficulty
-            if (levelFilter == 5 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.song.difficulty descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 5 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.song.difficulty ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-
-            //Date Edited
-            if (levelFilter == 6 && levelAscend == false)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.beatmap.date_edited descending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
-            }
-            if (levelFilter == 6 && levelAscend == true)
-            {
-                var result = new List<SteamWorkshop.SteamItem>();
-                result = (from x in ArcadeManager.inst.ArcadeList
-                          orderby x.metaData.beatmap.date_edited ascending
-                          select x).ToList();
-
-                ArcadeManager.inst.ArcadeList = result;
+                case 0:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.icon != SteamWorkshop.inst.defaultSteamImageSprite) :
+                            LevelManager.Levels.OrderByDescending(x => x.icon != SteamWorkshop.inst.defaultSteamImageSprite)).ToList();
+                        break;
+                    }
+                case 1:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.artist.Name) :
+                            LevelManager.Levels.OrderByDescending(x => x.metadata.artist.Name)).ToList();
+                        break;
+                    }
+                case 2:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.creator.steam_name) :
+                            LevelManager.Levels.OrderByDescending(x => x.metadata.creator.steam_name)).ToList();
+                        break;
+                    }
+                case 3:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => System.IO.Path.GetFileName(x.path)) :
+                            LevelManager.Levels.OrderByDescending(x => System.IO.Path.GetFileName(x.path))).ToList();
+                        break;
+                    }
+                case 4:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.song.title) :
+                            LevelManager.Levels.OrderByDescending(x => x.metadata.song.title)).ToList();
+                        break;
+                    }
+                case 5:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.song.difficulty) :
+                            LevelManager.Levels.OrderByDescending(x => x.metadata.song.difficulty)).ToList();
+                        break;
+                    }
+                case 6:
+                    {
+                        LevelManager.Levels =
+                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.beatmap.date_edited) :
+                            LevelManager.Levels.OrderByDescending(x => x.metadata.beatmap.date_edited)).ToList();
+                        break;
+                    }
             }
         }
 
@@ -768,10 +683,6 @@ namespace ArcadiaCustoms.Functions
                     button.onClick.AddListener(delegate ()
                     {
                         inst.StartCoroutine(SetSelectedSong(tmpLevel));
-                        if (!started)
-                        {
-                            Show();
-                        }
                     });
 
                     var icon = new GameObject("icon");
@@ -834,21 +745,16 @@ namespace ArcadiaCustoms.Functions
             while (!level.music)
                 yield return null;
 
+            if (!started)
+            {
+                Show();
+            }
+
             AudioManager.inst.StopMusic();
             AudioManager.inst.PlayMusic(level.music.name, level.music);
 
-            if (metadata.song.previewStart >= 0f)
-                previewStart = metadata.song.previewStart;
-            else
-                previewStart = UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
-
             previewStart = metadata.song.previewStart >= 0f ? metadata.song.previewStart : UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
             previewLength = metadata.song.previewLength > 0f ? metadata.song.previewLength : 30f;
-
-            if (metadata.song.previewLength > 0f)
-                previewLength = metadata.song.previewLength;
-            else
-                previewLength = 30f;
 
             AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
             AudioManager.inst.SetPitch(RTHelpers.getPitch());

@@ -148,6 +148,14 @@ namespace ArcadiaCustoms.Functions
             Destroy(GameObject.Find("Main Camera").GetComponent<ArcadeController>());
             Destroy(GameObject.Find("Main Camera").GetComponent<FlareLayer>());
             Destroy(GameObject.Find("Main Camera").GetComponent<GUILayer>());
+
+            if (ArcadeMenuManager.inst)
+            {
+                Destroy(GameObject.Find("VideoPlayer"));
+                Destroy(GameObject.Find("folder"));
+                Destroy(ArcadeMenuManager.inst.gameObject);
+            }
+
             yield break;
         }
 
