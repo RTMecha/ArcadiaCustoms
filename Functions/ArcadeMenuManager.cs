@@ -23,9 +23,9 @@ using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms.Functions
 {
-    public class MainMenuTest : MonoBehaviour
+    public class ArcadeMenuManager : MonoBehaviour
     {
-        public static MainMenuTest inst;
+        public static ArcadeMenuManager inst;
 
         public static GameObject settingsWindow;
         public static GameObject levelFolder;
@@ -103,8 +103,8 @@ namespace ArcadiaCustoms.Functions
 
             levelFolder = FolderButton();
 
-            ArcadePlugin.current = 0;
-            ArcadePlugin.arcadeQueue.Clear();
+            LevelManager.current = 0;
+            LevelManager.ArcadeQueue.Clear();
 
             yield return inst.StartCoroutine(GenerateOpenFilePopup());
 
@@ -238,14 +238,15 @@ namespace ArcadiaCustoms.Functions
                 playButtButt.onClick.RemoveAllListeners();
                 playButtButt.onClick.AddListener(delegate ()
                 {
-                    if (ArcadePlugin.arcadeQueue.Count > 1)
+                    LevelManager.current = 0;
+                    if (LevelManager.ArcadeQueue.Count > 1)
                     {
-                        ArcadePlugin.current = 0;
-                        SaveManager.inst.ArcadeQueue = ArcadePlugin.arcadeQueue[0];
+                        LevelManager.CurrentLevel = LevelManager.ArcadeQueue[0];
                     }
+
                     menuUI.SetActive(false);
-                    DataManager.inst.UpdateSettingBool("IsArcade", true);
-                    SceneManager.inst.LoadScene("Game");
+                    LevelManager.OnLevelEnd = ArcadeHelper.EndOfLevel;
+                    ArcadePlugin.inst.StartCoroutine(LevelManager.Play(LevelManager.CurrentLevel));
                 });
             }
 
@@ -266,10 +267,6 @@ namespace ArcadiaCustoms.Functions
 
                 var playButtButt = playButton.GetComponent<Button>();
                 playButtButt.onClick.RemoveAllListeners();
-                playButtButt.onClick.AddListener(delegate ()
-                {
-                    ArcadePlugin.arcadeQueue.Add(SaveManager.inst.ArcadeQueue);
-                });
             }
 
             //Get song
@@ -291,7 +288,7 @@ namespace ArcadiaCustoms.Functions
                 playButtButt.onClick.RemoveAllListeners();
                 playButtButt.onClick.AddListener(delegate ()
                 {
-                    Application.OpenURL(string.Format(DataManager.inst.linkTypes[SaveManager.inst.ArcadeQueue.MetaData.artist.LinkType].linkFormat, SaveManager.inst.ArcadeQueue.MetaData.artist.Link));
+                    Application.OpenURL(LevelManager.CurrentLevel.metadata.artist.getUrl());
                 });
             }
 
@@ -333,7 +330,7 @@ namespace ArcadiaCustoms.Functions
 
             inst.StartCoroutine(FixPopup());
 
-            iconBaseImage.sprite = (ArcadeManager.inst.ArcadeImageFiles.ContainsKey(0) ? ArcadeManager.inst.ArcadeImageFiles[0] : SteamWorkshop.inst.defaultSteamImageSprite);
+            iconBaseImage.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
 
             var tex = Instantiate(textMeshPro);
             tex.transform.SetParent(iconBase.transform);
@@ -366,11 +363,10 @@ namespace ArcadiaCustoms.Functions
 
             var levelPath = levelList.transform.Find("story path").GetComponent<InputField>();
             levelPath.onValueChanged.RemoveAllListeners();
-            string story = ArcadePlugin.beatmapsstory;
-            levelPath.text = story.Replace("beatmaps/", "");
+            levelPath.text = LevelManager.Path;
             levelPath.onValueChanged.AddListener(delegate (string _val)
             {
-                ArcadePlugin.beatmapsstory = "beatmaps/" + _val;
+                LevelManager.Path = _val;
             });
 
             var toggleClone = levelList.transform.Find("toggle/toggle").GetComponent<Toggle>();
@@ -705,9 +701,9 @@ namespace ArcadiaCustoms.Functions
             var go = new GameObject("spacer");
             go.transform.SetParent(levelList.transform.Find("mask/content"));
             go.AddComponent<RectTransform>();
-            foreach (var level in ArcadeManager.inst.ArcadeList)
+            foreach (var level in LevelManager.Levels)
             {
-                var metadata = level.metaData;
+                var metadata = level.metadata;
 
                 string difficultyName = "none";
                 if (metadata.song.difficulty == 0)
@@ -739,18 +735,17 @@ namespace ArcadiaCustoms.Functions
                     difficultyName = "animation";
                 }
 
-                if ((onlyShowQueue && ArcadePlugin.arcadeQueue.Find(x => x.MetaData.beatmap.workshop_id == level.metaData.beatmap.workshop_id) != null || !onlyShowQueue) && level.metaData.artist.Name.ToLower().Contains(searchTerm.ToLower()) || level.metaData.song.title.ToLower().Contains(searchTerm.ToLower()) || searchTerm == null || !(searchTerm != "") || difficultyName.Contains(searchTerm.ToLower()))
+                if (string.IsNullOrEmpty(searchTerm) || metadata.artist.Name.ToLower().Contains(searchTerm.ToLower()) || metadata.song.title.ToLower().Contains(searchTerm.ToLower()) || difficultyName.Contains(searchTerm.ToLower()))
                 {
-                    int itemID = level.itemID;
                     var tmpLevel = level;
                     var gameObject = Instantiate(levelFolder);
-                    gameObject.name = level.metaData.song.title;
+                    gameObject.name = metadata.song.title;
                     gameObject.transform.SetParent(levelList.transform.Find("mask/content"));
                     gameObject.transform.localScale = Vector3.one;
                     if (gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>())
                     {
                         var text = gameObject.transform.GetChild(0).GetComponent<TextMeshProUGUI>();
-                        text.text = string.Format("{0}</color> - {1}</color> By {2}", level.metaData.artist.Name, level.metaData.song.title, level.metaData.creator.steam_name);
+                        text.text = string.Format("{0}</color> - {1}</color> By {2}", metadata.artist.Name, metadata.song.title, metadata.creator.steam_name);
                         text.alignment = TextAlignmentOptions.Left;
                         text.color = offWhite;
                         text.fontSize = 26;
@@ -761,27 +756,25 @@ namespace ArcadiaCustoms.Functions
                     else
                     {
                         var text = gameObject.transform.GetChild(0).GetComponent<Text>();
-                        text.text = string.Format("{0} - {1} By {2}", level.metaData.artist.Name, level.metaData.song.title, level.metaData.creator.steam_name);
+                        text.text = string.Format("{0} - {1} By {2}", metadata.artist.Name, metadata.song.title, metadata.creator.steam_name);
                         text.alignment = TextAnchor.MiddleLeft;
 
                         var textRT = text.GetComponent<RectTransform>();
                         textRT.anchoredPosition = new Vector2(48f, 0f);
                     }
 
-                    gameObject.AddComponent<HoverUI>();
-
                     var button = gameObject.GetComponent<Button>();
                     button.onClick.RemoveAllListeners();
                     button.onClick.AddListener(delegate ()
                     {
-                        SetSelectedSong(tmpLevel);
+                        inst.StartCoroutine(SetSelectedSong(tmpLevel));
                         if (!started)
                         {
                             Show();
                         }
                     });
 
-                    GameObject icon = new GameObject("icon");
+                    var icon = new GameObject("icon");
                     icon.transform.SetParent(gameObject.transform);
                     icon.transform.localScale = Vector3.one;
                     icon.layer = 5;
@@ -792,7 +785,7 @@ namespace ArcadiaCustoms.Functions
                     iconRT.anchoredPosition = new Vector2(-460f, 0f);
                     iconRT.sizeDelta = new Vector2(32f, 32f);
 
-                    iconImage.sprite = (ArcadeManager.inst.ArcadeImageFiles.ContainsKey(itemID) ? ArcadeManager.inst.ArcadeImageFiles[itemID] : SteamWorkshop.inst.defaultSteamImageSprite);
+                    iconImage.sprite = level.icon;
 
                     GameObject difficulty = new GameObject("difficulty");
                     difficulty.transform.SetParent(gameObject.transform);
@@ -805,7 +798,7 @@ namespace ArcadiaCustoms.Functions
                     difficultyRT.anchoredPosition = new Vector2(-485f, 0f);
                     difficultyRT.sizeDelta = new Vector2(8f, 32f);
 
-                    difficultyImage.color = level.metaData.song.getDifficultyColor();
+                    difficultyImage.color = metadata.song.getDifficultyColor();
                 }
             }
             yield break;
@@ -820,39 +813,47 @@ namespace ArcadiaCustoms.Functions
 
         public static void LoopSongPreview()
         {
-            if (AudioManager.inst.CurrentAudioSource == null)
+            if (AudioManager.inst.CurrentAudioSource == null || !inst.selected)
                 return;
 
             if (previewStart >= 0f && previewLength > 0f && AudioManager.inst.CurrentAudioSource.time > previewStart + previewLength)
                 AudioManager.inst.CurrentAudioSource.time = previewStart;
         }
 
+        public bool selected = false;
         static float previewStart;
         static float previewLength;
 
-        public static void SetSelectedSong(SteamWorkshop.SteamItem _steamItem)
+        public static IEnumerator SetSelectedSong(Level level)
         {
-            SaveManager.ArcadeLevel arcadeLevel = new SaveManager.ArcadeLevel("", FileManager.inst.LoadJSONFileRaw(_steamItem.folder + "/level.lsb"), _steamItem.metaData, ArcadeManager.inst.ArcadeAudioClips[_steamItem.itemID]);
-            arcadeLevel.AudioFileStr = _steamItem.folder + "/level.ogg";
-            SaveManager.inst.ArcadeQueue = arcadeLevel;
+            LevelManager.CurrentLevel = level;
+
+            var metadata = level.metadata;
+
+            level.LoadAudioClip();
+            while (!level.music)
+                yield return null;
 
             AudioManager.inst.StopMusic();
-            AudioManager.inst.PlayMusic(arcadeLevel.BeatmapSong.name, arcadeLevel.BeatmapSong);
+            AudioManager.inst.PlayMusic(level.music.name, level.music);
 
-            if (arcadeLevel.MetaData.song.previewStart >= 0f)
-                previewStart = arcadeLevel.MetaData.song.previewStart;
+            if (metadata.song.previewStart >= 0f)
+                previewStart = metadata.song.previewStart;
             else
                 previewStart = UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
 
-            if (arcadeLevel.MetaData.song.previewLength > 0f)
-                previewLength = arcadeLevel.MetaData.song.previewLength;
+            previewStart = metadata.song.previewStart >= 0f ? metadata.song.previewStart : UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
+            previewLength = metadata.song.previewLength > 0f ? metadata.song.previewLength : 30f;
+
+            if (metadata.song.previewLength > 0f)
+                previewLength = metadata.song.previewLength;
             else
                 previewLength = 30f;
 
             AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
             AudioManager.inst.SetPitch(RTHelpers.getPitch());
 
-            if (RTFile.FileExists(_steamItem.folder + "/preview.mp4"))
+            if (RTFile.FileExists(level.path + "preview.mp4"))
             {
                 if (videoPlayer.source == VideoSource.VideoClip)
                 {
@@ -860,7 +861,7 @@ namespace ArcadiaCustoms.Functions
                     inst.StartCoroutine(SetCameraAlphaFade(20));
                     videoPlayer.playbackSpeed = RTHelpers.getPitch();
                 }
-                videoPlayer.url = _steamItem.folder + "/preview.mp4";
+                videoPlayer.url = level.path + "preview.mp4";
                 videoPlayer.source = VideoSource.Url;
                 videoPlayer.time = UnityEngine.Random.Range(0, (float)videoPlayer.length);
             }
@@ -870,21 +871,23 @@ namespace ArcadiaCustoms.Functions
                 videoPlayer.source = VideoSource.VideoClip;
             }
 
-            if (GetLevelRank(_steamItem) != null)
+            if (GetLevelRank(level) != null)
             {
-                levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = string.Format("<#{0}>{1}</color>", LSColors.ColorToHex(GetLevelRank(_steamItem).color), GetLevelRank(_steamItem).name);
+                var levelRank = GetLevelRank(level);
+                levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = $"<#{LSColors.ColorToHex(levelRank.color)}>{levelRank.name}</color>";
             }
             else
             {
                 levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = "-";
             }
-            levelWindow.transform.Find("icon").GetComponent<Image>().sprite = (ArcadeManager.inst.ArcadeImageFiles.ContainsKey(_steamItem.itemID) ? ArcadeManager.inst.ArcadeImageFiles[_steamItem.itemID] : SteamWorkshop.inst.defaultSteamImageSprite);
-            levelWindow.transform.Find("artist").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Artist</b>: {0}", _steamItem.metaData.artist.Name);
-            levelWindow.transform.Find("song").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Song</b>: {0}", _steamItem.metaData.song.title);
-            levelWindow.transform.Find("creator").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Creator</b>: {0}", _steamItem.metaData.creator.steam_name);
-            levelWindow.transform.Find("difficulty").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Difficulty</b>: {0}", string.Format("<b><color=#{0}>{1}</color></b>", LSColors.ColorToHex(_steamItem.metaData.song.getDifficultyColor()), _steamItem.metaData.song.getDifficulty()));
 
-            List<string> stringList = LSText.WordWrap(_steamItem.metaData.song.description, 60);
+            levelWindow.transform.Find("icon").GetComponent<Image>().sprite = level.icon;
+            levelWindow.transform.Find("artist").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Artist</b>: {0}", metadata.artist.Name);
+            levelWindow.transform.Find("song").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Song</b>: {0}", metadata.song.title);
+            levelWindow.transform.Find("creator").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Creator</b>: {0}", metadata.creator.steam_name);
+            levelWindow.transform.Find("difficulty").GetComponent<TextMeshProUGUI>().text = $"<b>Difficulty</b>: <b><color=#{LSColors.ColorToHex(metadata.song.getDifficultyColor())}>{metadata.song.getDifficulty()}</color></b>";
+
+            List<string> stringList = LSText.WordWrap(metadata.song.description, 60);
             string str = "";
             int num = Mathf.Clamp(stringList.Count, 0, 3);
 
@@ -896,20 +899,24 @@ namespace ArcadiaCustoms.Functions
             levelWindow.transform.Find("description").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Description</b>: <br>{0}", LSText.ClampString(str, 400));
 
             var add = levelWindow.transform.Find("buttons/add");
-            add.GetChild(0).GetComponent<TextMeshProUGUI>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited && x.MetaData.beatmap.workshop_id == SaveManager.inst.ArcadeQueue.MetaData.beatmap.workshop_id) != null ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]");
-            add.GetComponent<Button>().onClick.RemoveAllListeners();
-            add.GetComponent<Button>().onClick.AddListener(delegate ()
+            add.GetChild(0).GetComponent<TextMeshProUGUI>().text = LevelManager.ArcadeQueue.Has(x => x.id == level.id) ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]";
+            var addButton = add.GetComponent<Button>();
+            addButton.onClick.RemoveAllListeners();
+            addButton.onClick.AddListener(delegate ()
             {
-                if (ArcadePlugin.arcadeQueue.Contains(SaveManager.inst.ArcadeQueue))
+                if (LevelManager.ArcadeQueue.Has(x => x.id == level.id))
                 {
-                    ArcadePlugin.arcadeQueue.Remove(SaveManager.inst.ArcadeQueue);
+                    LevelManager.ArcadeQueue.RemoveAll(x => x.id == level.id);
                 }
                 else
                 {
-                    ArcadePlugin.arcadeQueue.Add(SaveManager.inst.ArcadeQueue);
+                    LevelManager.ArcadeQueue.Add(level);
                 }
-                add.GetChild(0).GetComponent<TextMeshProUGUI>().text = (ArcadePlugin.arcadeQueue.Find(x => x.MetaData.song.title == SaveManager.inst.ArcadeQueue.MetaData.song.title && x.MetaData.creator.steam_name == SaveManager.inst.ArcadeQueue.MetaData.creator.steam_name && x.MetaData.beatmap.date_edited == SaveManager.inst.ArcadeQueue.MetaData.beatmap.date_edited && x.MetaData.beatmap.workshop_id == SaveManager.inst.ArcadeQueue.MetaData.beatmap.workshop_id) != null ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]");
+
+                add.GetChild(0).GetComponent<TextMeshProUGUI>().text = LevelManager.ArcadeQueue.Has(x => x.id == level.id) ? "[REMOVE FROM<br> QUEUE]" : "[ADD TO QUEUE]";
             });
+
+            inst.selected = true;
         }
 
         public static IEnumerator SetCameraAlphaFade(int duration)
@@ -922,30 +929,6 @@ namespace ArcadiaCustoms.Functions
                 percent += 0.05f;
             }
             yield break;
-        }
-
-        public static void ShuffleQueue(int _count)
-        {
-            int count = Mathf.Clamp(_count, 0, ArcadeManager.inst.ArcadeList.Count - 1);
-            for (int i  = 0; i < count; i++)
-            {
-                var steamItem = ArcadeManager.inst.ArcadeList[UnityEngine.Random.Range(0, ArcadeManager.inst.ArcadeList.Count - 1)];
-                var arcadeLevel = new SaveManager.ArcadeLevel("", FileManager.inst.LoadJSONFileRaw(steamItem.folder + "\\level.lsb"), steamItem.metaData, ArcadeManager.inst.ArcadeAudioClips[steamItem.itemID]);
-                arcadeLevel.AudioFileStr = steamItem.folder + "\\level.ogg";
-
-                if (ArcadePlugin.arcadeQueue.Find(x => x.AudioFileStr == arcadeLevel.AudioFileStr) == null)
-                {
-                    ArcadePlugin.arcadeQueue.Add(arcadeLevel);
-                }
-            }
-
-            if (ArcadePlugin.arcadeQueue.Count > 1)
-            {
-                ArcadePlugin.current = 0;
-                SaveManager.inst.ArcadeQueue = ArcadePlugin.arcadeQueue[0];
-            }
-            DataManager.inst.UpdateSettingBool("IsArcade", true);
-            SceneManager.inst.LoadScene("Game");
         }
 
         public static IEnumerator FixPopup()
@@ -1415,98 +1398,15 @@ namespace ArcadiaCustoms.Functions
         public static void GetImage(Image _image, string _filePath)
         {
             if (RTFile.FileExists(_filePath))
-            {
-                SpriteManager.inst.StartCoroutine(SpriteManager.GetSprite(RTFile.ApplicationDirectory + _filePath, new SpriteManager.SpriteLimits(), delegate (Sprite cover)
-                {
-                    _image.sprite = cover;
-                }, delegate (string errorFile)
-                {
-                    _image.sprite = ArcadeManager.inst.defaultImage;
-                }));
-            }
+                _image.sprite = SpriteManager.LoadSprite(_filePath);
         }
 
-        public static DataManager.LevelRank GetLevelRank(SteamWorkshop.SteamItem _steamItem)
+        public static DataManager.LevelRank GetLevelRank(Level level)
         {
-            int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(_steamItem.metaData.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[_steamItem.metaData.beatmap.workshop_id].Hits.Count : -1;
-            return DataManager.inst.levelRanks.Find((DataManager.LevelRank x) => prevHits >= x.minHits && prevHits <= x.maxHits);
+            //int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(level.metadata.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[level.metadata.beatmap.workshop_id].Hits.Count : -1;
+            return DataManager.inst.levelRanks.Find(x => level.playerData.hits >= x.minHits && level.playerData.hits <= x.maxHits);
         }
 
         public static string publishedLevels;
-
-        public static string DriveDirect => "https://drive.google.com/uc?export=download&id=";
-        public static string DailyCover => "1sxP3JwFlyIAy3Y6pzj7kWa_1h62eun54";
-        public static string DailyLevel => "17G9LoU28x954v82M_2Hb8qmxxRKk59hq";
-        public static string DailySong => "1Nu2j-K_btfoK5AljXLz-6YCg2P8bdIO-";
-        public static string DailyMetadata => "1kBEEWqXhHaAxn1jLFAKkNYVmmYyA0h9G";
-        public static string DailyPlayers => "1xDOT8m52kqM7pNTG0S2Ah9Ujp4FMa9kG";
-
-        public void PlayDailyLevel()
-        {
-            StartCoroutine(GetDailyLevel(delegate (SaveManager.ArcadeLevel dailyLevel)
-            {
-                if (ArcadePlugin.arcadeQueue.Count > 1)
-                {
-                    ArcadePlugin.current = 0;
-                    ArcadePlugin.arcadeQueue.Clear();
-                    ArcadePlugin.arcadeQueue.Add(dailyLevel);
-                }
-                SaveManager.inst.ArcadeQueue = dailyLevel;
-                menuUI.SetActive(false);
-                DataManager.inst.UpdateSettingBool("IsArcade", true);
-                SceneManager.inst.LoadScene("Game");
-            }));
-        }
-
-        public static IEnumerator GetDailyLevel(Action<SaveManager.ArcadeLevel> callback)
-        {
-            string beatmapJSON = "";
-
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadJSONFile($"{DriveDirect}{DailyLevel}", delegate (string str)
-            {
-                beatmapJSON = str;
-            }, delegate (string onError)
-            {
-                beatmapJSON = "";
-            }));
-
-            string metadataJSON = "";
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadJSONFile($"{DriveDirect}{DailyMetadata}", delegate (string str)
-            {
-                metadataJSON = str;
-            }, delegate (string onError)
-            {
-                metadataJSON = "";
-            }));
-
-            AudioClip audioClip = null;
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadAudioClip($"{DriveDirect}{DailySong}", AudioType.OGGVORBIS, delegate (AudioClip clip)
-            {
-                audioClip = clip;
-            }, delegate (string onError)
-            {
-                audioClip = null;
-            }));
-
-            if (string.IsNullOrEmpty(beatmapJSON) || string.IsNullOrEmpty(metadataJSON) || audioClip == null)
-            {
-                Debug.LogError($"{ArcadePlugin.className}Could not get daily level.");
-                yield break;
-            }
-
-            var metadata = DataManager.inst.ParseMetadata(metadataJSON, false);
-
-            var id = new Steamworks.PublishedFileId_t((ulong)metadata.beatmap.workshop_id);
-
-            var steamItem = new SteamWorkshop.SteamItem(id);
-
-            steamItem.id = id;
-            steamItem.itemID = metadata.beatmap.workshop_id;
-            steamItem.metaData = metadata;
-
-            var arcadeLevel = new SaveManager.ArcadeLevel("", beatmapJSON, metadata, audioClip);
-
-            callback(arcadeLevel);
-        }
     }
 }

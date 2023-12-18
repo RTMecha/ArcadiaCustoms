@@ -1,177 +1,199 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.IO;
-using System.Text;
-using System.Threading.Tasks;
+
+using LSFunctions;
 
 using UnityEngine;
+using UnityEngine.UI;
 
 using RTFunctions.Functions.IO;
-using RTFunctions.Functions.Managers.Networking;
+using RTFunctions.Functions.Managers;
 
 namespace ArcadiaCustoms.Functions
 {
     public static class ArcadeHelper
     {
-        public static string publishedLevels;
 
-        public static string DailyLevelPath => "beatmaps/showcase level/level.lsb";
-        public static string DailyMetadataPath => "beatmaps/showcase level/metadata.lsb";
-        public static string DailySongPath => "beatmaps/showcase level/level.ogg";
-        public static string DailyCoverPath => "beatmaps/showcase level/level.jpg";
-        public static string DailyPlayersPath => "beatmaps/showcase level/players.lsb";
+		public static void EndOfLevel()
+		{
+			var __instance = GameManager.inst;
+			GameManager.inst.players.SetActive(false);
+			InputDataManager.inst.SetAllControllerRumble(0f);
 
-        public static string DriveDirect => "https://drive.google.com/uc?export=download&id=";
-        public static string DailyLevel => "17G9LoU28x954v82M_2Hb8qmxxRKk59hq";
-        public static string DailyMetadata => "1kBEEWqXhHaAxn1jLFAKkNYVmmYyA0h9G";
-        public static string DailySong => "1Nu2j-K_btfoK5AljXLz-6YCg2P8bdIO-";
-        public static string DailyCover => "1sxP3JwFlyIAy3Y6pzj7kWa_1h62eun54";
-        public static string DailyPlayers => "1xDOT8m52kqM7pNTG0S2Ah9Ujp4FMa9kG";
+			__instance.gameState = GameManager.State.Paused;
+			__instance.timeline.gameObject.SetActive(false);
+			__instance.menuUI.GetComponentInChildren<Image>().enabled = true;
 
-        public static float BeatmapJSONProgress { get; set; }
-        public static float MetadataJSONProgress { get; set; }
-        public static float SongProgress { get; set; }
-        public static float CoverProgress { get; set; }
-        public static float PlayersProgress { get; set; }
+			var ic = __instance.menuUI.GetComponent<InterfaceController>();
 
-        public static IEnumerator GetDailyLevel(Action<SteamWorkshop.SteamItem> levelCallback, Action<Sprite> coverCallback, Action<AudioClip> songCallback)
-        {
-            string beatmapJSON = "";
-            string metadataJSON = "";
-            AudioClip audioClip = null;
-            Sprite cover = null;
+			var metadata = LevelManager.CurrentLevel.metadata;
 
-            if (!RTFile.DirectoryExists(RTFile.ApplicationDirectory + "beatmaps/showcase level"))
-                Directory.CreateDirectory(RTFile.ApplicationDirectory + "beatmaps/showcase level");
+			if (DataManager.inst.GetSettingBool("IsArcade", false))
+			{
+				Debug.Log($"{__instance.className}Setting Player Data");
+				int prevHits = LevelManager.CurrentLevel.playerData.hits;
 
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DriveDirect}{DailyLevel}", delegate (float x)
-            {
-                BeatmapJSONProgress = x;
-                Debug.Log($"BeatmapJSONProgress: {x}");
+				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
+				{
+					LevelManager.CurrentLevel.playerData.deaths = __instance.deaths.Count;
+					LevelManager.CurrentLevel.playerData.hits = __instance.hits.Count;
+					LevelManager.CurrentLevel.playerData.completed = true;
+					LevelManager.UpdateSavesFile();
+				}
 
-                if (LoadLevels.inst)
-                    LoadLevels.inst.UpdateInfo($"Loading Showcase Level level.lsb... {x * 100}%", x);
+				Debug.Log($"{__instance.className}Setting More Info");
+				//More Info
+				{
+					var moreInfo = ic.interfaceBranches.Find(x => x.name == "end_of_level_more_info");
+					moreInfo.elements[5] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You died a total of " + __instance.deaths.Count + " times.", "end_of_level_more_info");
+					moreInfo.elements[6] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You got hit a total of " + __instance.hits.Count + " times.", "end_of_level_more_info");
+					moreInfo.elements[7] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Total song time: " + AudioManager.inst.CurrentAudioSource.clip.length, "end_of_level_more_info");
+					moreInfo.elements[8] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Time in level: " + ArcadePlugin.timeInLevel, "end_of_level_more_info");
+				}
 
-            }, delegate (byte[] bytes)
-            {
-                File.WriteAllBytes(RTFile.ApplicationDirectory + DailyLevelPath, bytes);
-            }, delegate (string onError)
-            {
+				int index = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level");
+				int index2 = ic.interfaceBranches.FindIndex(x => x.name == "getsong");
+				int index3 = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level_more_info");
 
-            }));
-            
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DriveDirect}{DailyMetadata}", delegate (float x)
-            {
-                MetadataJSONProgress = x;
-                Debug.Log($"MetadataJSONProgress: {x}");
+				int num = 5;
+				int num2 = 24;
+				int num3 = 2;
+				int num4 = 11;
+				int[] hitsNormalized = new int[num2 + 1];
+				foreach (var playerDataPoint in __instance.hits)
+				{
+					int num5 = (int)RTMath.SuperLerp(0f, AudioManager.inst.CurrentAudioSource.clip.length, 0f, (float)num2, playerDataPoint.time);
+					Debug.Log(num5);
+					hitsNormalized[num5]++;
+				}
 
-                if (LoadLevels.inst)
-                    LoadLevels.inst.UpdateInfo($"Loading Showcase Level metadata.lsb... {x * 100}%", x);
+				Debug.Log($"{__instance.className}Setting Level Ranks");
+				var levelRank = DataManager.inst.levelRanks.Find(x => hitsNormalized.Sum() >= x.minHits && hitsNormalized.Sum() <= x.maxHits);
+				var levelRank2 = DataManager.inst.levelRanks.Find(x => prevHits >= x.minHits && prevHits <= x.maxHits);
 
-            }, delegate (byte[] bytes)
-            {
-                File.WriteAllBytes(RTFile.ApplicationDirectory + DailyMetadataPath, bytes);
-            }, delegate (string onError)
-            {
+				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) == 0)
+				{
+					levelRank = DataManager.inst.levelRanks.Find(x => x.name == "-");
+					levelRank2 = null;
+				}
 
-            }));
-            
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DriveDirect}{DailySong}", delegate (float x)
-            {
-                SongProgress = x;
-                Debug.Log($"SongProgress: {x}");
+				Debug.Log($"{__instance.className}Setting Achievements");
+				if (levelRank.name == "SS")
+					SteamWrapper.inst.achievements.SetAchievement("SS_RANK");
+				else if (levelRank.name == "F")
+					SteamWrapper.inst.achievements.SetAchievement("F_RANK");
 
-                if (LoadLevels.inst)
-                    LoadLevels.inst.UpdateInfo($"Loading Showcase Level level.ogg... {x * 100}%", x);
+				Debug.Log($"{__instance.className}Setting End UI");
+				List<string> list = LSText.WordWrap(levelRank.sayings[Random.Range(0, levelRank.sayings.Length)], 32);
+				string themeColorHex = LSColors.GetThemeColorHex("easy");
+				string themeColorHex2 = LSColors.GetThemeColorHex("normal");
+				string themeColorHex3 = LSColors.GetThemeColorHex("hard");
+				string themeColorHex4 = LSColors.GetThemeColorHex("expert");
+				__instance.Pause(false);
+				for (int i = 0; i < num4; i++)
+				{
+					string text = "<b>";
+					for (int j = 0; j < num2; j++)
+					{
+						int num6 = hitsNormalized.Take(j + 1).Sum();
+						int num7 = (int)RTMath.SuperLerp(0f, 15f, 0f, (float)num4, (float)num6);
+						string str;
+						if (num6 == 0)
+						{
+							str = themeColorHex;
+						}
+						else if (num6 <= 3)
+						{
+							str = themeColorHex2;
+						}
+						else if (num6 <= 9)
+						{
+							str = themeColorHex3;
+						}
+						else
+						{
+							str = themeColorHex4;
+						}
+						for (int k = 0; k < num3; k++)
+						{
+							if (num7 == i)
+							{
+								text = text + "<color=" + str + "ff>▓</color>";
+							}
+							else if (num7 > i)
+							{
+								text += "<alpha=#22>▓";
+							}
+							else if (num7 < i)
+							{
+								text = text + "<color=" + str + "44>▓</color>";
+							}
+						}
+					}
+					text += "</b>";
+					if (num == 5)
+					{
+						text = "<voffset=0.6em>" + text;
+						if (prevHits == -1)
+						{
+							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color>", LSColors.ColorToHex(levelRank.color), levelRank.name);
+						}
+						else if (prevHits > __instance.hits.Count && levelRank2 != null)
+						{
+							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color><size=150%> <voffset=0.325em><b>-></b> <voffset=0em><size=300%><color=#{2}><b>{3}</b></color>", new object[]
+							{
+								LSColors.ColorToHex(levelRank2.color),
+								levelRank2.name,
+								LSColors.ColorToHex(levelRank.color),
+								levelRank.name
+							});
+						}
+						else
+						{
+							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color>", LSColors.ColorToHex(levelRank.color), levelRank.name);
+						}
+					}
+					if (num >= 7 && list.Count > num - 7)
+					{
+						text = text + "       <alpha=#ff>" + list[num - 7];
+					}
+					var interfaceElement = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, text);
+					interfaceElement.branch = "end_of_level";
+					ic.interfaceBranches[index].elements[num] = interfaceElement;
+					num++;
+				}
+				var interfaceElement2 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, string.Format("Level Summary - <b>{0}</b> by {1}", metadata.song.title, metadata.artist.Name));
+				interfaceElement2.branch = "end_of_level";
+				ic.interfaceBranches[index].elements[2] = interfaceElement2;
 
-            },
-            delegate (byte[] bytes)
-            {
-                File.WriteAllBytes(RTFile.ApplicationDirectory + DailySongPath, bytes);
-            }, delegate (string onError)
-            {
+				InterfaceController.InterfaceElement interfaceElement3 = null;
+				LevelManager.current++;
+				Debug.LogFormat("{0}Selecting next Arcade level in queue [{1} / {2}]", ArcadePlugin.className, LevelManager.current, LevelManager.ArcadeQueue.Count - 1);
+				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current < LevelManager.ArcadeQueue.Count)
+				{
+					LevelManager.CurrentLevel = LevelManager.ArcadeQueue[LevelManager.current];
+					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
+				}
+				else
+				{
+					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
+				}
+				interfaceElement3.settings.Add("alignment", "center");
+				interfaceElement3.settings.Add("orientation", "grid");
+				interfaceElement3.settings.Add("width", "1");
+				interfaceElement3.settings.Add("grid_h", "5");
+				interfaceElement3.settings.Add("grid_v", "1");
+				interfaceElement3.branch = "end_of_level";
+				ic.interfaceBranches[index].elements[17] = interfaceElement3;
+				var interfaceElement4 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "openlink::" + metadata.artist.getUrl());
+				interfaceElement4.branch = "getsong";
+				ic.interfaceBranches[index2].elements[0] = interfaceElement4;
 
-            }));
-            
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DriveDirect}{DailyCover}", delegate (float x)
-            {
-                CoverProgress = x;
-                Debug.Log($"CoverProgress: {x}");
-
-                if (LoadLevels.inst)
-                    LoadLevels.inst.UpdateInfo($"Loading Showcase Level level.jpg... {x * 100}%", x);
-
-            },
-            delegate (byte[] bytes)
-            {
-                File.WriteAllBytes(RTFile.ApplicationDirectory + DailyCoverPath, bytes);
-            }, delegate (string onError)
-            {
-
-            }));
-
-            yield return AlephNetworkManager.inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DriveDirect}{DailyPlayers}", delegate (float x)
-            {
-                PlayersProgress = x;
-                Debug.Log($"PlayersProgress: {x}");
-
-                if (LoadLevels.inst)
-                    LoadLevels.inst.UpdateInfo($"Loading Showcase Level players.lsb... {x * 100}%", x);
-            },
-            delegate (byte[] bytes)
-            {
-                File.WriteAllBytes(RTFile.ApplicationDirectory + DailyPlayersPath, bytes);
-            }, delegate (string onError)
-            {
-
-            }));
-
-            if (RTFile.FileExists(RTFile.ApplicationDirectory + DailyLevelPath))
-                beatmapJSON = FileManager.inst.LoadJSONFile(DailyLevelPath);
-            
-            if (RTFile.FileExists(RTFile.ApplicationDirectory + DailyMetadataPath))
-                metadataJSON = FileManager.inst.LoadJSONFile(DailyMetadataPath);
-
-            if (RTFile.FileExists(RTFile.ApplicationDirectory + DailySongPath))
-                yield return FileManager.inst.StartCoroutine(FileManager.inst.LoadMusicFile(DailySongPath, delegate (AudioClip ac)
-                {
-                    audioClip = ac;
-                }));
-
-            if (RTFile.FileExists(RTFile.ApplicationDirectory + DailyCoverPath))
-                yield return FileManager.inst.StartCoroutine(FileManager.inst.LoadImageFileRaw(RTFile.ApplicationDirectory + DailyCoverPath, delegate (Sprite sprite)
-                {
-                    cover = sprite;
-                }, delegate (string onError)
-                {
-
-                }));
-
-            if (string.IsNullOrEmpty(beatmapJSON) || string.IsNullOrEmpty(metadataJSON) || audioClip == null || cover == null)
-            {
-                Debug.LogError($"{ArcadePlugin.className}Could not get showcase level.");
-                yield break;
-            }
-
-            var metadata = DataManager.inst.ParseMetadata(metadataJSON, false);
-
-            var id = new Steamworks.PublishedFileId_t((ulong)metadata.beatmap.workshop_id);
-
-            var steamItem = new SteamWorkshop.SteamItem(id);
-
-            steamItem.id = id;
-            steamItem.itemID = metadata.beatmap.workshop_id;
-            steamItem.metaData = metadata;
-            steamItem.folder = RTFile.ApplicationDirectory + "beatmaps/showcase level";
-
-            if (levelCallback != null)
-                levelCallback(steamItem);
-            if (coverCallback != null)
-                coverCallback(cover);
-            if (songCallback != null)
-                songCallback(audioClip);
-        }
-    }
+				var interfaceBranch = new InterfaceController.InterfaceBranch("next");
+				interfaceBranch.elements.Add(new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "loadscene::Game::true", "next"));
+				ic.interfaceBranches.Add(interfaceBranch);
+			}
+			ic.SwitchBranch("end_of_level");
+		}
+	}
 }

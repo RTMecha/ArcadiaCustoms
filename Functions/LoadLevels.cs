@@ -12,6 +12,8 @@ using TMPro;
 
 using LSFunctions;
 
+using RTFunctions.Functions.Managers;
+
 namespace ArcadiaCustoms.Functions
 {
     public class LoadLevels : MonoBehaviour
@@ -31,7 +33,7 @@ namespace ArcadiaCustoms.Functions
 
         public bool cancelled = false;
 
-        private void Awake()
+        void Awake()
         {
             inst = this;
 
@@ -41,7 +43,7 @@ namespace ArcadiaCustoms.Functions
             inst.StartCoroutine(CreateDialog());
         }
 
-        private void Update()
+        void Update()
         {
             screenScale = (float)Screen.width / 1920f;
             screenScaleInverse = 1f / screenScale;
@@ -63,7 +65,6 @@ namespace ArcadiaCustoms.Functions
 
             var inter = new GameObject("Interface");
             inter.transform.localScale = Vector3.one * screenScale;
-            inter.AddComponent<SpriteManager>();
             menuUI = inter;
             var interfaceRT = inter.AddComponent<RectTransform>();
             interfaceRT.anchoredPosition = new Vector2(960f, 540f);
@@ -88,13 +89,13 @@ namespace ArcadiaCustoms.Functions
 
             inter.AddComponent<GraphicRaycaster>();
 
-            var openFilePopup = MainMenuTest.GenerateUIImage("Loading Popup", inter.transform);
+            var openFilePopup = ArcadeMenuManager.GenerateUIImage("Loading Popup", inter.transform);
             var parent = ((GameObject)openFilePopup["GameObject"]).transform;
             parent.localScale = Vector3.one;
 
             var openFilePopupRT = (RectTransform)openFilePopup["RectTransform"];
             var zeroFive = new Vector2(0.5f, 0.5f);
-            MainMenuTest.SetRectTransform(openFilePopupRT, Vector2.zero, zeroFive, zeroFive, zeroFive, new Vector2(800f, 600f));
+            ArcadeMenuManager.SetRectTransform(openFilePopupRT, Vector2.zero, zeroFive, zeroFive, zeroFive, new Vector2(800f, 600f));
 
             ((Image)openFilePopup["Image"]).color = new Color(0.1f, 0.1f, 0.1f, 0.3f);
 
@@ -110,23 +111,23 @@ namespace ArcadiaCustoms.Functions
             iconBaseRT.anchoredPosition = new Vector2(0f, 130f);
             iconBaseRT.sizeDelta = new Vector2(256f, 256f);
 
-            loadImage.sprite = ArcadeManager.inst.ArcadeImageFiles.ContainsKey(0) ? ArcadeManager.inst.ArcadeImageFiles[0] : SteamWorkshop.inst.defaultSteamImageSprite;
+            loadImage.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
 
             var title = GenerateUITextMeshPro("Title", parent);
             loadText = (TextMeshProUGUI)title["Text"];
             loadText.fontSize = 30;
             loadText.alignment = TextAlignmentOptions.Center;
 
-            MainMenuTest.SetRectTransform((RectTransform)title["RectTransform"], new Vector2(0f, -40f), Vector2.one, Vector2.zero, new Vector2(0f, 0.5f), new Vector2(32f, 32f));
+            ArcadeMenuManager.SetRectTransform((RectTransform)title["RectTransform"], new Vector2(0f, -40f), Vector2.one, Vector2.zero, new Vector2(0f, 0.5f), new Vector2(32f, 32f));
             ((GameObject)title["GameObject"]).transform.localScale = Vector3.one;
 
-            var loaderBase = MainMenuTest.GenerateUIImage("LoaderBase", parent);
-            MainMenuTest.SetRectTransform((RectTransform)loaderBase["RectTransform"], new Vector2(-300f, -140f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(600f, 32f));
+            var loaderBase = ArcadeMenuManager.GenerateUIImage("LoaderBase", parent);
+            ArcadeMenuManager.SetRectTransform((RectTransform)loaderBase["RectTransform"], new Vector2(-300f, -140f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(600f, 32f));
             ((GameObject)loaderBase["GameObject"]).transform.localScale = Vector3.one;
 
-            var loader = MainMenuTest.GenerateUIImage("Loader", ((GameObject)loaderBase["GameObject"]).transform);
+            var loader = ArcadeMenuManager.GenerateUIImage("Loader", ((GameObject)loaderBase["GameObject"]).transform);
             loadingBar = (RectTransform)loader["RectTransform"];
-            MainMenuTest.SetRectTransform(loadingBar, new Vector2(-300f, 0f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(0f, 32f));
+            ArcadeMenuManager.SetRectTransform(loadingBar, new Vector2(-300f, 0f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(0f, 32f));
 
             loadingBar.localScale = Vector3.one;
 
@@ -208,7 +209,6 @@ namespace ArcadiaCustoms.Functions
         {
             Debug.LogFormat("{0}Loading done!", ArcadePlugin.className);
             ArcadePlugin.inst.StartCoroutine(ArcadePlugin.OnLoadingEnd());
-
             Destroy(menuUI);
             Destroy(gameObject);
         }
