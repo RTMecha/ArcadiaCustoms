@@ -40,7 +40,7 @@ namespace ArcadiaCustoms.Patchers
         static void SetAntialiasing()
         {
 			if (!LevelManager.finished)
-				ArcadePlugin.timeInLevel = ArcadePlugin.timeInLevelOffset - Time.time;
+				ArcadePlugin.timeInLevel = Time.time - ArcadePlugin.timeInLevelOffset;
         }
 	}
 }
