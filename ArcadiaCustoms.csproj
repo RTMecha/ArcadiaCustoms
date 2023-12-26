@@ -4,7 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>ArcadiaCustoms</AssemblyName>
     <Description>The custom arcade mod for Project Arrhythmia that allows users to play levels that aren't on the Steam Workshop.</Description>
-    <Version>1.6.1</Version>
+    <Version>1.6.2</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
@@ -42,6 +42,7 @@
     <Reference Include="RTFunctions">
       <HintPath>..\RTFunctions\bin\Debug\net46\RTFunctions.dll</HintPath>
     </Reference>
+    <Reference Include="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
     <Reference Include="Unity.Postprocessing.Runtime">
       <HintPath>..\lib\Unity.Postprocessing.Runtime.dll</HintPath>
     </Reference>
