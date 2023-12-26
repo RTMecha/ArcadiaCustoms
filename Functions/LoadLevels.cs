@@ -163,7 +163,7 @@ namespace ArcadiaCustoms.Functions
         {
             float e = (float)num / (float)totalLevelCount;
 
-            Debug.LogFormat("{0}Loading at {1}% - {2} / {3}", ArcadePlugin.className, e * 100, num, totalLevelCount);
+            //Debug.LogFormat("{0}Loading at {1}% - {2} / {3}", ArcadePlugin.className, e * 100, num, totalLevelCount);
             loadingBar.sizeDelta = new Vector2(600f * e, 32f);
 
             loadImage.sprite = sprite;
