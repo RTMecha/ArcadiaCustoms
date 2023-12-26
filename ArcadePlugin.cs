@@ -33,7 +33,7 @@ using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.6.1")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.6.2")]
     [BepInDependency("com.mecha.rtfunctions")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
@@ -87,7 +87,23 @@ namespace ArcadiaCustoms
                 ArcadeManager.inst.forcedSkip = false;
                 DataManager.inst.UpdateSettingBool("IsArcade", true);
 
+                if (!RTFile.DirectoryExists(RTFile.ApplicationDirectory + LevelManager.ListPath))
+                {
+                    SceneManager.inst.LoadScene("Input Select");
+                    currentlyLoading = false;
+                    System.Windows.Forms.MessageBox.Show("Arcade directory does not exist!");
+                    yield break;
+                }
+
                 var directories = Directory.GetDirectories(RTFile.ApplicationDirectory + LevelManager.ListPath, "*", SearchOption.TopDirectoryOnly);
+
+                if (directories.Length < 1)
+                {
+                    SceneManager.inst.LoadScene("Input Select");
+                    currentlyLoading = false;
+                    System.Windows.Forms.MessageBox.Show("No levels to load!");
+                    yield break;
+                }
 
                 if (LoadLevels.inst != null)
                     LoadLevels.totalLevelCount = directories.Length;
