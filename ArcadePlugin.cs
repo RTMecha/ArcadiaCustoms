@@ -59,6 +59,19 @@ namespace ArcadiaCustoms
             Logger.LogInfo($"Plugin Arcadia Customs is loaded!");
 
             harmony.PatchAll();
+
+            try
+            {
+                if (!ModCompatibility.mods.ContainsKey("ArcadiaCustoms"))
+                {
+                    var mod = new ModCompatibility.Mod(this, GetType());
+                    ModCompatibility.mods.Add("ArcadiaCustoms", mod);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError("Mod Error" + ex.ToString());
+            }
         }
 
         public static void MainMenuTester()
