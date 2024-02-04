@@ -33,7 +33,7 @@ using RTFunctions.Functions.Managers.Networking;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.6.2")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", " 1.6.3")]
     [BepInDependency("com.mecha.rtfunctions")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
