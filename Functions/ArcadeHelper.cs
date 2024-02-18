@@ -6,6 +6,7 @@ using LSFunctions;
 using UnityEngine;
 using UnityEngine.UI;
 
+using RTFunctions.Functions;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
 
@@ -31,14 +32,21 @@ namespace ArcadiaCustoms.Functions
 			if (DataManager.inst.GetSettingBool("IsArcade", false))
 			{
 				Debug.Log($"{__instance.className}Setting Player Data");
-				int prevHits = LevelManager.CurrentLevel.playerData.hits;
+				int prevHits = LevelManager.CurrentLevel.playerData != null ? LevelManager.CurrentLevel.playerData.Hits : -1;
 
 				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
 				{
-					LevelManager.CurrentLevel.playerData.deaths = __instance.deaths.Count;
-					LevelManager.CurrentLevel.playerData.hits = __instance.hits.Count;
-					LevelManager.CurrentLevel.playerData.completed = true;
-					LevelManager.UpdateSavesFile();
+					LevelManager.CurrentLevel.playerData.Deaths = __instance.deaths.Count;
+					LevelManager.CurrentLevel.playerData.Hits = __instance.hits.Count;
+					LevelManager.CurrentLevel.playerData.Completed = true;
+
+					if (LevelManager.Saves.Has(x => x.ID == LevelManager.CurrentLevel.id))
+					{
+						var saveIndex = LevelManager.Saves.FindIndex(x => x.ID == LevelManager.CurrentLevel.id);
+						LevelManager.Saves[saveIndex] = LevelManager.CurrentLevel.playerData;
+					}
+
+					LevelManager.SaveProgress();
 				}
 
 				Debug.Log($"{__instance.className}Setting More Info");
@@ -47,8 +55,9 @@ namespace ArcadiaCustoms.Functions
 					var moreInfo = ic.interfaceBranches.Find(x => x.name == "end_of_level_more_info");
 					moreInfo.elements[5] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You died a total of " + __instance.deaths.Count + " times.", "end_of_level_more_info");
 					moreInfo.elements[6] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You got hit a total of " + __instance.hits.Count + " times.", "end_of_level_more_info");
-					moreInfo.elements[7] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Total song time: " + AudioManager.inst.CurrentAudioSource.clip.length, "end_of_level_more_info");
-					moreInfo.elements[8] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Time in level: " + ArcadePlugin.timeInLevel, "end_of_level_more_info");
+					moreInfo.elements[7] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "You boosted a total of " + LevelManager.BoostCount + " times.", "end_of_level_more_info");
+					moreInfo.elements[8] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Total song time: " + AudioManager.inst.CurrentAudioSource.clip.length, "end_of_level_more_info");
+					moreInfo.elements[9] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Time in level: " + ArcadePlugin.timeInLevel, "end_of_level_more_info");
 				}
 
 				int index = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level");
