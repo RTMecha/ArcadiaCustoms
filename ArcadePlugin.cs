@@ -43,6 +43,8 @@ namespace ArcadiaCustoms
 
         //Update list
 
+        public static ConfigEntry<int> CurrentLevelMode { get; set; }
+
         public static ArcadePlugin inst;
         public static string className = "[<color=#F5501B>ArcadiaCustoms</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
         readonly Harmony harmony = new Harmony("Arcade");
@@ -55,6 +57,10 @@ namespace ArcadiaCustoms
         void Awake()
         {
             inst = this;
+
+            CurrentLevelMode = Config.Bind("Level", "Level Mode", 0, "If a modes.lsms exists in the arcade level folder that you're loading, it will list other level modes (think easy mode, cutscene mode, hard mode, etc). The value in this config is for choosing which mode gets loaded. 0 is the default level.lsb.");
+            CurrentLevelMode.SettingChanged += CurrentLevelModeChanged;
+            LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
 
             Logger.LogInfo($"Plugin Arcadia Customs is loaded!");
 
@@ -72,6 +78,11 @@ namespace ArcadiaCustoms
             {
                 Logger.LogError("Mod Error" + ex.ToString());
             }
+        }
+
+        void CurrentLevelModeChanged(object sender, EventArgs e)
+        {
+            LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
         }
 
         public static void MainMenuTester()
@@ -123,24 +134,7 @@ namespace ArcadiaCustoms
 
                 LevelManager.Levels.Clear();
                 LevelManager.ArcadeQueue.Clear();
-
-                string json = LSEncryption.DecryptText(FileManager.inst.LoadJSONFile(SaveManager.inst.settingsFilePath + "/" + SaveManager.inst.savesFileName), SaveManager.inst.encryptionKey);
-                var jn = JSON.Parse(json);
-                var saveDictionary = new Dictionary<string, Level.PlayerData>();
-
-                for (int i = 0; i < jn["arcade"].Count; i++)
-                {
-                    var js = jn["arcade"][i];
-                    string id = js["level_data"]["id"];
-                    if (!saveDictionary.ContainsKey(id))
-                    {
-                        saveDictionary.Add(id, new Level.PlayerData(
-                            js["play_data"]["hits"].AsInt,
-                            js["play_data"]["deaths"].AsInt,
-                            js["play_data"]["boosts"] == null ? -1 : js["play_data"]["boost"].AsInt,
-                            js["play_data"]["finished"].AsBool, js["level_data"]["ver"].AsInt));
-                    }
-                }
+                LevelManager.LoadProgress();
 
                 int num = 0;
                 foreach (var folder in directories)
@@ -157,15 +151,15 @@ namespace ArcadiaCustoms
 
                     yield return new WaitForSeconds(delay);
 
-                    if (RTFile.FileExists(path + "/metadata.lsb"))
+                    if (RTFile.FileExists(path + "/metadata.lsb") || RTFile.FileExists(path + "/metadata.vgm"))
                     {
                         var level = new Level(path + "/");
 
                         if (level.metadata && level.metadata.beatmap.workshop_id == -1)
                             level.metadata.beatmap.workshop_id = UnityEngine.Random.Range(0, int.MaxValue);
 
-                        if (saveDictionary.ContainsKey(level.id))
-                            level.playerData = saveDictionary[level.id];
+                        if (LevelManager.Saves.Has(x => x.ID == level.id))
+                            level.playerData = LevelManager.Saves.Find(x => x.ID == level.id);
 
                         if (LoadLevels.inst)
                             LoadLevels.inst.UpdateInfo(level.icon, name, num);
