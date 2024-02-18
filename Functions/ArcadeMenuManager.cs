@@ -1309,8 +1309,14 @@ namespace ArcadiaCustoms.Functions
 
         public static DataManager.LevelRank GetLevelRank(Level level)
         {
-            //int prevHits = SaveManager.inst.ArcadeSaves.ContainsKey(level.metadata.beatmap.workshop_id) ? SaveManager.inst.ArcadeSaves[level.metadata.beatmap.workshop_id].Hits.Count : -1;
-            return DataManager.inst.levelRanks.Find(x => level.playerData.hits >= x.minHits && level.playerData.hits <= x.maxHits);
+            if (DataManager.inst.levelRanks.TryFind(x => level.playerData != null && level.playerData.Hits >= x.minHits && level.playerData.Hits <= x.maxHits, out DataManager.LevelRank levelRank))
+            {
+                return levelRank;
+            }
+            else
+            {
+                return DataManager.inst.levelRanks[0];
+            }
         }
 
         public static string publishedLevels;
