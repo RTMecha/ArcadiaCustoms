@@ -44,6 +44,7 @@ namespace ArcadiaCustoms
         //Update list
 
         public static ConfigEntry<int> CurrentLevelMode { get; set; }
+        public static ConfigEntry<bool> UseNewArcadeUI { get; set; }
 
         public static ArcadePlugin inst;
         public static string className = "[<color=#F5501B>ArcadiaCustoms</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
@@ -60,6 +61,9 @@ namespace ArcadiaCustoms
 
             CurrentLevelMode = Config.Bind("Level", "Level Mode", 0, "If a modes.lsms exists in the arcade level folder that you're loading, it will list other level modes (think easy mode, cutscene mode, hard mode, etc). The value in this config is for choosing which mode gets loaded. 0 is the default level.lsb.");
             CurrentLevelMode.SettingChanged += CurrentLevelModeChanged;
+
+            UseNewArcadeUI = Config.Bind("Arcade", "Use New UI", false, "If the arcade should use the new UI or not. The old UI should always be accessible if you want to use it.");
+
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
 
             Logger.LogInfo($"Plugin Arcadia Customs is loaded!");
@@ -185,7 +189,8 @@ namespace ArcadiaCustoms
             yield return new WaitForSeconds(0.1f);
             AudioManager.inst.PlaySound("loadsound");
             var menu = new GameObject("Main Menu System");
-            menu.AddComponent<ArcadeMenuManager>();
+            object component = UseNewArcadeUI.Value ? menu.AddComponent<ArcadeMenu>() : menu.AddComponent<ArcadeMenuManager>();
+
             yield break;
         }
     }
