@@ -21,6 +21,8 @@ namespace ArcadiaCustoms.Functions
 			GameManager.inst.players.SetActive(false);
 			InputDataManager.inst.SetAllControllerRumble(0f);
 
+			AudioManager.inst.SetMusicTime(AudioManager.inst.CurrentAudioSource.clip.length - 0.1f);
+
 			__instance.gameState = GameManager.State.Paused;
 			__instance.timeline.gameObject.SetActive(false);
 			__instance.menuUI.GetComponentInChildren<Image>().enabled = true;
@@ -34,7 +36,7 @@ namespace ArcadiaCustoms.Functions
 				Debug.Log($"{__instance.className}Setting Player Data");
 				int prevHits = LevelManager.CurrentLevel.playerData != null ? LevelManager.CurrentLevel.playerData.Hits : -1;
 
-				if (!PlayerManager.IsZenMode)
+				if (!PlayerManager.IsZenMode && !PlayerManager.IsPractice)
 				{
 					if (LevelManager.CurrentLevel.playerData == null)
 					{
@@ -44,10 +46,13 @@ namespace ArcadiaCustoms.Functions
 						};
 					}
 
-					LevelManager.CurrentLevel.playerData.Deaths = __instance.deaths.Count;
-					LevelManager.CurrentLevel.playerData.Hits = __instance.hits.Count;
+					if (LevelManager.CurrentLevel.playerData.Deaths < __instance.deaths.Count)
+						LevelManager.CurrentLevel.playerData.Deaths = __instance.deaths.Count;
+					if (LevelManager.CurrentLevel.playerData.Hits < __instance.hits.Count)
+						LevelManager.CurrentLevel.playerData.Hits = __instance.hits.Count;
 					LevelManager.CurrentLevel.playerData.Completed = true;
-					LevelManager.CurrentLevel.playerData.Boosts = LevelManager.BoostCount;
+					if (LevelManager.CurrentLevel.playerData.Boosts < LevelManager.BoostCount)
+						LevelManager.CurrentLevel.playerData.Boosts = LevelManager.BoostCount;
 
 					if (LevelManager.Saves.Has(x => x.ID == LevelManager.CurrentLevel.id))
 					{
@@ -195,11 +200,10 @@ namespace ArcadiaCustoms.Functions
 				ic.interfaceBranches[index].elements[2] = interfaceElement2;
 
 				InterfaceController.InterfaceElement interfaceElement3 = null;
-				LevelManager.current++;
 
-				Debug.LogFormat("{0}Selecting next Arcade level in queue [{1} / {2}]", ArcadePlugin.className, LevelManager.current, LevelManager.ArcadeQueue.Count - 1);
-				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current < LevelManager.ArcadeQueue.Count)
+				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current++ < LevelManager.ArcadeQueue.Count)
 				{
+					Debug.Log($"{ArcadePlugin.className}Selecting next Arcade level in queue [{LevelManager.current + 1} / {LevelManager.ArcadeQueue.Count}]");
 					LevelManager.CurrentLevel = LevelManager.ArcadeQueue[LevelManager.current];
 					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
 				}
