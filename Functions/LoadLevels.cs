@@ -47,6 +47,9 @@ namespace ArcadiaCustoms.Functions
         {
             screenScale = (float)Screen.width / 1920f;
             screenScaleInverse = 1f / screenScale;
+
+            Camera.main.backgroundColor = LSColors.HexToColor(DataManager.inst.interfaceSettings["UITheme"][SaveManager.inst.settings.Video.UITheme]["values"]["bg"]);
+
             if (InputDataManager.inst.menuActions.Cancel.WasPressed && !LSHelpers.IsUsingInputField())
             {
                 cancelled = true;
