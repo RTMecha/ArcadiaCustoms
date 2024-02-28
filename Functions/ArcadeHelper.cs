@@ -9,6 +9,7 @@ using UnityEngine.UI;
 using RTFunctions.Functions;
 using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
+using RTFunctions;
 
 namespace ArcadiaCustoms.Functions
 {
@@ -21,9 +22,6 @@ namespace ArcadiaCustoms.Functions
 			GameManager.inst.players.SetActive(false);
 			InputDataManager.inst.SetAllControllerRumble(0f);
 
-			AudioManager.inst.SetMusicTime(AudioManager.inst.CurrentAudioSource.clip.length - 0.1f);
-
-			__instance.gameState = GameManager.State.Paused;
 			__instance.timeline.gameObject.SetActive(false);
 			__instance.menuUI.GetComponentInChildren<Image>().enabled = true;
 
@@ -114,7 +112,13 @@ namespace ArcadiaCustoms.Functions
 				string themeColorHex3 = LSColors.GetThemeColorHex("hard");
 				string themeColorHex4 = LSColors.GetThemeColorHex("expert");
 
-				__instance.Pause(false);
+				__instance.Pause();
+				if (FunctionsPlugin.ReplayLevel.Value)
+				{
+					AudioManager.inst.SetMusicTime(0f);
+					AudioManager.inst.CurrentAudioSource.Play();
+				}
+
 				for (int i = 0; i < num4; i++)
 				{
 					string text = "<b>";
