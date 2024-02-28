@@ -34,17 +34,28 @@ namespace ArcadiaCustoms.Functions
 				Debug.Log($"{__instance.className}Setting Player Data");
 				int prevHits = LevelManager.CurrentLevel.playerData != null ? LevelManager.CurrentLevel.playerData.Hits : -1;
 
-				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) != 0)
+				if (!PlayerManager.IsZenMode)
 				{
+					if (LevelManager.CurrentLevel.playerData == null)
+					{
+						LevelManager.CurrentLevel.playerData = new LevelManager.PlayerData
+						{
+							ID = LevelManager.CurrentLevel.id,
+						};
+					}
+
 					LevelManager.CurrentLevel.playerData.Deaths = __instance.deaths.Count;
 					LevelManager.CurrentLevel.playerData.Hits = __instance.hits.Count;
 					LevelManager.CurrentLevel.playerData.Completed = true;
+					LevelManager.CurrentLevel.playerData.Boosts = LevelManager.BoostCount;
 
 					if (LevelManager.Saves.Has(x => x.ID == LevelManager.CurrentLevel.id))
 					{
 						var saveIndex = LevelManager.Saves.FindIndex(x => x.ID == LevelManager.CurrentLevel.id);
 						LevelManager.Saves[saveIndex] = LevelManager.CurrentLevel.playerData;
 					}
+					else
+						LevelManager.Saves.Add(LevelManager.CurrentLevel.playerData);
 
 					LevelManager.SaveProgress();
 				}
@@ -72,18 +83,17 @@ namespace ArcadiaCustoms.Functions
 				foreach (var playerDataPoint in __instance.hits)
 				{
 					int num5 = (int)RTMath.SuperLerp(0f, AudioManager.inst.CurrentAudioSource.clip.length, 0f, (float)num2, playerDataPoint.time);
-					Debug.Log(num5);
 					hitsNormalized[num5]++;
 				}
 
 				Debug.Log($"{__instance.className}Setting Level Ranks");
 				var levelRank = DataManager.inst.levelRanks.Find(x => hitsNormalized.Sum() >= x.minHits && hitsNormalized.Sum() <= x.maxHits);
-				var levelRank2 = DataManager.inst.levelRanks.Find(x => prevHits >= x.minHits && prevHits <= x.maxHits);
+				var newLevelRank = DataManager.inst.levelRanks.Find(x => prevHits >= x.minHits && prevHits <= x.maxHits);
 
-				if (DataManager.inst.GetSettingEnum("ArcadeDifficulty", 1) == 0)
+				if (PlayerManager.IsZenMode)
 				{
 					levelRank = DataManager.inst.levelRanks.Find(x => x.name == "-");
-					levelRank2 = null;
+					newLevelRank = null;
 				}
 
 				Debug.Log($"{__instance.className}Setting Achievements");
@@ -98,6 +108,7 @@ namespace ArcadiaCustoms.Functions
 				string themeColorHex2 = LSColors.GetThemeColorHex("normal");
 				string themeColorHex3 = LSColors.GetThemeColorHex("hard");
 				string themeColorHex4 = LSColors.GetThemeColorHex("expert");
+
 				__instance.Pause(false);
 				for (int i = 0; i < num4; i++)
 				{
@@ -143,16 +154,17 @@ namespace ArcadiaCustoms.Functions
 					if (num == 5)
 					{
 						text = "<voffset=0.6em>" + text;
+
 						if (prevHits == -1)
 						{
 							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color>", LSColors.ColorToHex(levelRank.color), levelRank.name);
 						}
-						else if (prevHits > __instance.hits.Count && levelRank2 != null)
+						else if (prevHits > __instance.hits.Count && newLevelRank != null)
 						{
 							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color><size=150%> <voffset=0.325em><b>-></b> <voffset=0em><size=300%><color=#{2}><b>{3}</b></color>", new object[]
 							{
-								LSColors.ColorToHex(levelRank2.color),
-								levelRank2.name,
+								LSColors.ColorToHex(newLevelRank.color),
+								newLevelRank.name,
 								LSColors.ColorToHex(levelRank.color),
 								levelRank.name
 							});
@@ -162,10 +174,17 @@ namespace ArcadiaCustoms.Functions
 							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color>", LSColors.ColorToHex(levelRank.color), levelRank.name);
 						}
 					}
-					if (num >= 7 && list.Count > num - 7)
+					if (num == 7)
 					{
-						text = text + "       <alpha=#ff>" + list[num - 7];
+						text = "<voffset=0.6em>" + text;
+
+						text += $"       <voffset=0em><size=300%><color=#{LSColors.ColorToHex(levelRank.color)}><b>{LevelManager.CalculateAccuracy(__instance.hits.Count, AudioManager.inst.CurrentAudioSource.clip.length)}%</b></color>";
 					}
+					if (num >= 9 && list.Count > num - 9)
+					{
+						text = text + "       <alpha=#ff>" + list[num - 9];
+					}
+
 					var interfaceElement = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, text);
 					interfaceElement.branch = "end_of_level";
 					ic.interfaceBranches[index].elements[num] = interfaceElement;
@@ -177,6 +196,7 @@ namespace ArcadiaCustoms.Functions
 
 				InterfaceController.InterfaceElement interfaceElement3 = null;
 				LevelManager.current++;
+
 				Debug.LogFormat("{0}Selecting next Arcade level in queue [{1} / {2}]", ArcadePlugin.className, LevelManager.current, LevelManager.ArcadeQueue.Count - 1);
 				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current < LevelManager.ArcadeQueue.Count)
 				{
@@ -187,6 +207,7 @@ namespace ArcadiaCustoms.Functions
 				{
 					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
 				}
+
 				interfaceElement3.settings.Add("alignment", "center");
 				interfaceElement3.settings.Add("orientation", "grid");
 				interfaceElement3.settings.Add("width", "1");
