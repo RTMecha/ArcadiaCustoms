@@ -59,6 +59,8 @@ namespace ArcadiaCustoms.Functions
             screenScale = RTHelpers.screenScale;
             screenScaleInverse = RTHelpers.screenScaleInverse;
 
+            Camera.main.backgroundColor = LSColors.HexToColor(DataManager.inst.interfaceSettings["UITheme"][SaveManager.inst.settings.Video.UITheme]["values"]["bg"]);
+
             if (InputDataManager.inst.menuActions.Cancel.WasPressed && !LSHelpers.IsUsingInputField())
             {
                 SceneManager.inst.LoadScene("Input Select");
@@ -473,6 +475,7 @@ namespace ArcadiaCustoms.Functions
                     new Dropdown.OptionData("Normal"),
                     new Dropdown.OptionData("1 Life"),
                     new Dropdown.OptionData("1 Hit"),
+                    new Dropdown.OptionData("Practice"),
                 };
 
                 difficultyDD.onValueChanged.RemoveAllListeners();
@@ -724,11 +727,11 @@ namespace ArcadiaCustoms.Functions
 
         public static void LoopSongPreview()
         {
-            if (AudioManager.inst.CurrentAudioSource == null || !inst.selected)
-                return;
+            //if (AudioManager.inst.CurrentAudioSource == null || !inst.selected)
+            //    return;
 
-            if (previewStart >= 0f && previewLength > 0f && AudioManager.inst.CurrentAudioSource.time > previewStart + previewLength)
-                AudioManager.inst.CurrentAudioSource.time = previewStart;
+            //if (previewStart >= 0f && previewLength > 0f && AudioManager.inst.CurrentAudioSource.time > previewStart + previewLength)
+            //    AudioManager.inst.CurrentAudioSource.time = previewStart;
         }
 
         public bool selected = false;
@@ -741,9 +744,13 @@ namespace ArcadiaCustoms.Functions
 
             var metadata = level.metadata;
 
-            level.LoadAudioClip();
-            while (!level.music)
-                yield return null;
+            if (!level.music)
+            {
+                inst.selected = false;
+                level.LoadAudioClip();
+                while (!level.music)
+                    yield return null;
+            }
 
             if (!started)
             {
@@ -751,12 +758,13 @@ namespace ArcadiaCustoms.Functions
             }
 
             AudioManager.inst.StopMusic();
-            AudioManager.inst.PlayMusic(level.music.name, level.music);
+            Debug.Log($"{ArcadePlugin.className}Trying to play [ {metadata.song.title} | {level.music} ]");
+            AudioManager.inst.PlayMusic(metadata.song.title, level.music);
 
             previewStart = metadata.song.previewStart >= 0f ? metadata.song.previewStart : UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f);
             previewLength = metadata.song.previewLength > 0f ? metadata.song.previewLength : 30f;
 
-            AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
+            //AudioManager.inst.SetMusicTime(UnityEngine.Random.Range(0f, AudioManager.inst.CurrentAudioSource.clip.length / 2f));
             AudioManager.inst.SetPitch(RTHelpers.getPitch());
 
             if (RTFile.FileExists(level.path + "preview.mp4"))
@@ -777,15 +785,9 @@ namespace ArcadiaCustoms.Functions
                 videoPlayer.source = VideoSource.VideoClip;
             }
 
-            if (GetLevelRank(level) != null)
-            {
-                var levelRank = GetLevelRank(level);
-                levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = $"<#{LSColors.ColorToHex(levelRank.color)}>{levelRank.name}</color>";
-            }
-            else
-            {
-                levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = "-";
-            }
+            var levelRank = LevelManager.GetLevelRank(level);
+
+            levelWindow.transform.Find("icon/LevelRank").GetComponent<TextMeshProUGUI>().text = $"<#{LSColors.ColorToHex(levelRank.color)}>{levelRank.name}</color>";
 
             levelWindow.transform.Find("icon").GetComponent<Image>().sprite = level.icon;
             levelWindow.transform.Find("artist").GetComponent<TextMeshProUGUI>().text = string.Format("<b>Artist</b>: {0}", metadata.artist.Name);
@@ -1305,18 +1307,6 @@ namespace ArcadiaCustoms.Functions
         {
             if (RTFile.FileExists(_filePath))
                 _image.sprite = SpriteManager.LoadSprite(_filePath);
-        }
-
-        public static DataManager.LevelRank GetLevelRank(Level level)
-        {
-            if (DataManager.inst.levelRanks.TryFind(x => level.playerData != null && level.playerData.Hits >= x.minHits && level.playerData.Hits <= x.maxHits, out DataManager.LevelRank levelRank))
-            {
-                return levelRank;
-            }
-            else
-            {
-                return DataManager.inst.levelRanks[0];
-            }
         }
 
         public static string publishedLevels;
