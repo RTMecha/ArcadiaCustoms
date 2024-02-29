@@ -74,18 +74,15 @@ namespace ArcadiaCustoms.Functions
 					moreInfo.elements[9] = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, "Time in level: " + ArcadePlugin.timeInLevel, "end_of_level_more_info");
 				}
 
-				int index = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level");
-				int index2 = ic.interfaceBranches.FindIndex(x => x.name == "getsong");
-				int index3 = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level_more_info");
+				int endOfLevelIndex = ic.interfaceBranches.FindIndex(x => x.name == "end_of_level");
+				int getSongIndex = ic.interfaceBranches.FindIndex(x => x.name == "getsong");
 
-				int num = 5;
-				int num2 = 24;
-				int num3 = 2;
-				int num4 = 11;
-				int[] hitsNormalized = new int[num2 + 1];
+				int line = 5;
+				int dataPointMax = 24;
+				int[] hitsNormalized = new int[dataPointMax + 1];
 				foreach (var playerDataPoint in __instance.hits)
 				{
-					int num5 = (int)RTMath.SuperLerp(0f, AudioManager.inst.CurrentAudioSource.clip.length, 0f, (float)num2, playerDataPoint.time);
+					int num5 = (int)RTMath.SuperLerp(0f, AudioManager.inst.CurrentAudioSource.clip.length, 0f, (float)dataPointMax, playerDataPoint.time);
 					hitsNormalized[num5]++;
 				}
 
@@ -106,61 +103,50 @@ namespace ArcadiaCustoms.Functions
 					SteamWrapper.inst.achievements.SetAchievement("F_RANK");
 
 				Debug.Log($"{__instance.className}Setting End UI");
-				List<string> list = LSText.WordWrap(levelRank.sayings[Random.Range(0, levelRank.sayings.Length)], 32);
-				string themeColorHex = LSColors.GetThemeColorHex("easy");
-				string themeColorHex2 = LSColors.GetThemeColorHex("normal");
-				string themeColorHex3 = LSColors.GetThemeColorHex("hard");
-				string themeColorHex4 = LSColors.GetThemeColorHex("expert");
+				var sayings = LSText.WordWrap(levelRank.sayings[Random.Range(0, levelRank.sayings.Length)], 32);
+				string easy = LSColors.GetThemeColorHex("easy");
+				string normal = LSColors.GetThemeColorHex("normal");
+				string hard = LSColors.GetThemeColorHex("hard");
+				string expert = LSColors.GetThemeColorHex("expert");
 
-				__instance.Pause();
 				if (FunctionsPlugin.ReplayLevel.Value)
 				{
 					AudioManager.inst.SetMusicTime(0f);
 					AudioManager.inst.CurrentAudioSource.Play();
 				}
+				else
+                {
+					AudioManager.inst.SetMusicTime(AudioManager.inst.CurrentAudioSource.clip.length - 0.01f);
+					AudioManager.inst.CurrentAudioSource.Pause();
+				}
 
-				for (int i = 0; i < num4; i++)
+				for (int i = 0; i < 11; i++)
 				{
 					string text = "<b>";
-					for (int j = 0; j < num2; j++)
+					for (int j = 0; j < dataPointMax; j++)
 					{
-						int num6 = hitsNormalized.Take(j + 1).Sum();
-						int num7 = (int)RTMath.SuperLerp(0f, 15f, 0f, (float)num4, (float)num6);
-						string str;
-						if (num6 == 0)
+						int sum = hitsNormalized.Take(j + 1).Sum();
+						int sumLerp = (int)RTMath.SuperLerp(0f, 15f, 0f, (float)11, (float)sum);
+						string color = sum == 0 ? easy : sum <= 3 ? normal : sum <= 9 ? hard : expert;
+
+						for (int k = 0; k < 2; k++)
 						{
-							str = themeColorHex;
-						}
-						else if (num6 <= 3)
-						{
-							str = themeColorHex2;
-						}
-						else if (num6 <= 9)
-						{
-							str = themeColorHex3;
-						}
-						else
-						{
-							str = themeColorHex4;
-						}
-						for (int k = 0; k < num3; k++)
-						{
-							if (num7 == i)
+							if (sumLerp == i)
 							{
-								text = text + "<color=" + str + "ff>▓</color>";
+								text = text + "<color=" + color + "ff>▓</color>";
 							}
-							else if (num7 > i)
+							else if (sumLerp > i)
 							{
 								text += "<alpha=#22>▓";
 							}
-							else if (num7 < i)
+							else if (sumLerp < i)
 							{
-								text = text + "<color=" + str + "44>▓</color>";
+								text = text + "<color=" + color + "44>▓</color>";
 							}
 						}
 					}
 					text += "</b>";
-					if (num == 5)
+					if (line == 5)
 					{
 						text = "<voffset=0.6em>" + text;
 
@@ -183,49 +169,51 @@ namespace ArcadiaCustoms.Functions
 							text += string.Format("       <voffset=0em><size=300%><color=#{0}><b>{1}</b></color>", LSColors.ColorToHex(levelRank.color), levelRank.name);
 						}
 					}
-					if (num == 7)
+
+					if (line == 7)
 					{
 						text = "<voffset=0.6em>" + text;
 
 						text += $"       <voffset=0em><size=300%><color=#{LSColors.ColorToHex(levelRank.color)}><b>{LevelManager.CalculateAccuracy(__instance.hits.Count, AudioManager.inst.CurrentAudioSource.clip.length)}%</b></color>";
 					}
-					if (num >= 9 && list.Count > num - 9)
+
+					if (line >= 9 && sayings.Count > line - 9)
 					{
-						text = text + "       <alpha=#ff>" + list[num - 9];
+						text = text + "       <alpha=#ff>" + sayings[line - 9];
 					}
 
 					var interfaceElement = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, text);
 					interfaceElement.branch = "end_of_level";
-					ic.interfaceBranches[index].elements[num] = interfaceElement;
-					num++;
+					ic.interfaceBranches[endOfLevelIndex].elements[line] = interfaceElement;
+					line++;
 				}
-				var interfaceElement2 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, string.Format("Level Summary - <b>{0}</b> by {1}", metadata.song.title, metadata.artist.Name));
-				interfaceElement2.branch = "end_of_level";
-				ic.interfaceBranches[index].elements[2] = interfaceElement2;
+				var levelSummary = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Text, string.Format("Level Summary - <b>{0}</b> by {1}", metadata.song.title, metadata.artist.Name));
+				levelSummary.branch = "end_of_level";
+				ic.interfaceBranches[endOfLevelIndex].elements[2] = levelSummary;
 
-				InterfaceController.InterfaceElement interfaceElement3 = null;
+				InterfaceController.InterfaceElement buttons = null;
 
 				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current++ < LevelManager.ArcadeQueue.Count)
 				{
 					Debug.Log($"{ArcadePlugin.className}Selecting next Arcade level in queue [{LevelManager.current + 1} / {LevelManager.ArcadeQueue.Count}]");
 					LevelManager.CurrentLevel = LevelManager.ArcadeQueue[LevelManager.current];
-					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
+					buttons = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
 				}
 				else
 				{
-					interfaceElement3 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
+					buttons = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
 				}
 
-				interfaceElement3.settings.Add("alignment", "center");
-				interfaceElement3.settings.Add("orientation", "grid");
-				interfaceElement3.settings.Add("width", "1");
-				interfaceElement3.settings.Add("grid_h", "5");
-				interfaceElement3.settings.Add("grid_v", "1");
-				interfaceElement3.branch = "end_of_level";
-				ic.interfaceBranches[index].elements[17] = interfaceElement3;
-				var interfaceElement4 = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "openlink::" + metadata.artist.getUrl());
-				interfaceElement4.branch = "getsong";
-				ic.interfaceBranches[index2].elements[0] = interfaceElement4;
+				buttons.settings.Add("alignment", "center");
+				buttons.settings.Add("orientation", "grid");
+				buttons.settings.Add("width", "1");
+				buttons.settings.Add("grid_h", "5");
+				buttons.settings.Add("grid_v", "1");
+				buttons.branch = "end_of_level";
+				ic.interfaceBranches[endOfLevelIndex].elements[17] = buttons;
+				var openLink = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "openlink::" + metadata.artist.getUrl());
+				openLink.branch = "getsong";
+				ic.interfaceBranches[getSongIndex].elements[0] = openLink;
 
 				var interfaceBranch = new InterfaceController.InterfaceBranch("next");
 				interfaceBranch.elements.Add(new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Event, "loadscene::Game::true", "next"));
