@@ -162,7 +162,7 @@ namespace ArcadiaCustoms.Functions
             yield break;
         }
 
-        public void UpdateInfo(Sprite sprite, string name, int num)
+        public void UpdateInfo(Sprite sprite, string status, int num, bool logError = false)
         {
             float e = (float)num / (float)totalLevelCount;
 
@@ -170,7 +170,10 @@ namespace ArcadiaCustoms.Functions
             loadingBar.sizeDelta = new Vector2(600f * e, 32f);
 
             loadImage.sprite = sprite;
-            loadText.text = LSText.ClampString("Loading " + name, 52);
+            loadText.text = LSText.ClampString(status, 52);
+
+            if (logError)
+                Debug.LogError($"{ArcadePlugin.className}{status}");
         }
 
         public void UpdateInfo(string name, float percentage)
