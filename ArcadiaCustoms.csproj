@@ -4,7 +4,7 @@
     <TargetFramework>net46</TargetFramework>
     <AssemblyName>ArcadiaCustoms</AssemblyName>
     <Description>The custom arcade mod for Project Arrhythmia that allows users to play levels that aren't on the Steam Workshop.</Description>
-    <Version>1.6.3</Version>
+    <Version>2.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
   </PropertyGroup>
