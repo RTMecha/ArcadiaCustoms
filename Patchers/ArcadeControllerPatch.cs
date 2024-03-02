@@ -10,6 +10,8 @@ using UnityEngine;
 
 using LSFunctions;
 
+using RTFunctions.Functions;
+
 namespace ArcadiaCustoms.Patchers
 {
 	[HarmonyPatch(typeof(ArcadeController))]
@@ -17,9 +19,17 @@ namespace ArcadiaCustoms.Patchers
     {
 		[HarmonyPatch("Start")]
 		[HarmonyPrefix]
-		static bool StartPrefix()
+		static bool StartPrefix(ArcadeController __instance)
         {
 			Debug.LogFormat("{0}Trying to generate new arcade UI...", ArcadePlugin.className);
+
+			if (ArcadePlugin.buttonPrefab == null)
+            {
+				ArcadePlugin.buttonPrefab = __instance.ic.ButtonPrefab.Duplicate(null);
+				UnityEngine.Object.DontDestroyOnLoad(ArcadePlugin.buttonPrefab);
+			}
+
+			InputDataManager.inst.playersCanJoin = false;
 			ArcadePlugin.MainMenuTester();
 			return true;
         }
