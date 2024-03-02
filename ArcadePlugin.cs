@@ -39,25 +39,30 @@ namespace ArcadiaCustoms
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
     {
-        //TODO
-        //Implement the shine effect when you've SS ranked a level.
-
-        //Update list
-
         public static ConfigEntry<int> CurrentLevelMode { get; set; }
         public static ConfigEntry<bool> UseNewArcadeUI { get; set; }
 
         public static ConfigEntry<int> TabsRoundedness { get; set; }
 
+        public static ConfigEntry<int> PlayLevelMenuButtonsRoundness { get; set; }
+        public static ConfigEntry<int> PlayLevelMenuIconRoundness { get; set; }
+
         public static ConfigEntry<int> LocalLevelsRoundness { get; set; }
         public static ConfigEntry<int> LocalLevelsIconRoundness { get; set; }
+
         public static ConfigEntry<bool> MiscRounded { get; set; }
+
+        public static ConfigEntry<int> PageFieldRoundness { get; set; }
+
+        #region Shine Config
+
         public static ConfigEntry<bool> OnlyShowShineOnSelected { get; set; }
         public static ConfigEntry<float> ShineSpeed { get; set; }
         public static ConfigEntry<float> ShineMaxDelay { get; set; }
         public static ConfigEntry<float> ShineMinDelay { get; set; }
         public static ConfigEntry<Color> ShineColor { get; set; }
 
+        #endregion
 
         public static ArcadePlugin inst;
         public static string className = "[<color=#F5501B>ArcadiaCustoms</color>] " + PluginInfo.PLUGIN_VERSION + "\n";
@@ -67,6 +72,8 @@ namespace ArcadiaCustoms
 
         public static float timeInLevel = 0f;
         public static float timeInLevelOffset = 0f;
+
+        public static GameObject buttonPrefab;
 
         void Awake()
         {
@@ -94,6 +101,15 @@ namespace ArcadiaCustoms
             ShineMinDelay = Config.Bind("Arcade", "SS Rank Shine Min Delay", 0.2f, new ConfigDescription("The min time the shine delays.", new AcceptableValueRange<float>(0.1f, 3f)));
             ShineColor = Config.Bind("Arcade", "SS Rank Shine Color", new Color(1f, 0.933f, 0.345f, 1f), "The color of the shine.");
 
+            PageFieldRoundness = Config.Bind("Arcade", "Page Field Roundness", 1, new ConfigDescription("How rounded the Page Input Field is. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
+            PageFieldRoundness.SettingChanged += MiscRoundedChanged;
+
+            PlayLevelMenuButtonsRoundness = Config.Bind("Arcade", "Play Level Menu Buttons Roundness", 1, new ConfigDescription("How rounded the Play Menu Buttons are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
+            PlayLevelMenuButtonsRoundness.SettingChanged += PlayLevelMenuRoundnessChanged;
+
+            PlayLevelMenuIconRoundness = Config.Bind("Arcade", "Play Level Menu Icon Roundness", 2, new ConfigDescription("How rounded the Play Menu Buttons are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
+            PlayLevelMenuIconRoundness.SettingChanged += PlayLevelMenuRoundnessChanged;
+
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
 
             Logger.LogInfo($"Plugin Arcadia Customs is loaded!");
@@ -114,17 +130,22 @@ namespace ArcadiaCustoms
             }
         }
 
-        void MiscRoundedChanged(object sender, EventArgs e)
+        void PlayLevelMenuRoundnessChanged(object sender, EventArgs e)
         {
-            if (!ArcadeMenu.inst)
-                return;
-
-            ArcadeMenu.inst.UpdateMiscRoundness();
+            PlayLevelMenuManager.inst?.UpdateRoundness();
         }
 
-        void LocalLevelPanelsRoundnessChanged(object sender, EventArgs e) => ArcadeMenu.inst?.UpdateLocalLevelsRoundness();
+        void MiscRoundedChanged(object sender, EventArgs e)
+        {
+            if (!ArcadeMenuManager.inst)
+                return;
 
-        void TabsRoundnessChanged(object sender, EventArgs e) => ArcadeMenu.inst?.UpdateTabRoundness();
+            ArcadeMenuManager.inst.UpdateMiscRoundness();
+        }
+
+        void LocalLevelPanelsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateLocalLevelsRoundness();
+
+        void TabsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateTabRoundness();
 
         void CurrentLevelModeChanged(object sender, EventArgs e)
         {
@@ -135,13 +156,13 @@ namespace ArcadiaCustoms
         {
             if (fromLevel)
             {
-                var menu = new GameObject("Main Menu System");
-                menu.AddComponent<ArcadeMenuManager>();
+                var menu = new GameObject("Arcade Menu System");
+                Component component = UseNewArcadeUI.Value ? menu.AddComponent<ArcadeMenuManager>() : menu.AddComponent<LevelMenuManager>();
             }
             else
             {
                 var menu = new GameObject("Load Level System");
-                menu.AddComponent<LoadLevels>();
+                menu.AddComponent<LoadLevelsManager>();
             }
         }
 
@@ -177,8 +198,8 @@ namespace ArcadiaCustoms
                 //    yield break;
                 //}
 
-                if (LoadLevels.inst != null)
-                    LoadLevels.totalLevelCount = directories.Length;
+                if (LoadLevelsManager.inst != null)
+                    LoadLevelsManager.totalLevelCount = directories.Length;
 
                 LevelManager.Levels.Clear();
                 LevelManager.ArcadeQueue.Clear();
@@ -187,7 +208,7 @@ namespace ArcadiaCustoms
                 int num = 0;
                 foreach (var folder in directories)
                 {
-                    if (LoadLevels.inst != null && LoadLevels.inst.cancelled)
+                    if (LoadLevelsManager.inst != null && LoadLevelsManager.inst.cancelled)
                     {
                         SceneManager.inst.LoadScene("Input Select");
                         currentlyLoading = false;
@@ -208,8 +229,8 @@ namespace ArcadiaCustoms
 
                     if (metadata == null)
                     {
-                        if (LoadLevels.inst)
-                            LoadLevels.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No metadata in {name}</color>", num, true);
+                        if (LoadLevelsManager.inst)
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No metadata in {name}</color>", num, true);
 
                         yield return new WaitForSeconds(0.5f);
 
@@ -221,8 +242,8 @@ namespace ArcadiaCustoms
                     if (!RTFile.FileExists($"{path}/level.ogg") && !RTFile.FileExists($"{path}/level.wav") && !RTFile.FileExists($"{path}/level.mp3")
                         && !RTFile.FileExists($"{path}/audio.ogg") && !RTFile.FileExists($"{path}/audio.wav") && !RTFile.FileExists($"{path}/audio.mp3"))
                     {
-                        if (LoadLevels.inst)
-                            LoadLevels.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
+                        if (LoadLevelsManager.inst)
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
 
                         yield return new WaitForSeconds(0.5f);
 
@@ -233,8 +254,8 @@ namespace ArcadiaCustoms
                     
                     if (!RTFile.FileExists($"{path}/level.lsb") && !RTFile.FileExists($"{path}/level.vgd"))
                     {
-                        if (LoadLevels.inst)
-                            LoadLevels.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
+                        if (LoadLevelsManager.inst)
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
 
                         yield return new WaitForSeconds(0.01f);
 
@@ -254,14 +275,11 @@ namespace ArcadiaCustoms
 
                     var level = new Level(path + "/");
 
-                    if (level.metadata && level.metadata.beatmap.workshop_id == -1)
-                        level.metadata.beatmap.workshop_id = UnityEngine.Random.Range(0, int.MaxValue);
-
                     if (LevelManager.Saves.Has(x => x.ID == level.id))
                         level.playerData = LevelManager.Saves.Find(x => x.ID == level.id);
 
-                    if (LoadLevels.inst)
-                        LoadLevels.inst.UpdateInfo(level.icon, $"Loading {name}", num);
+                    if (LoadLevelsManager.inst)
+                        LoadLevelsManager.inst.UpdateInfo(level.icon, $"Loading {name}", num);
 
                     LevelManager.Levels.Add(level);
 
@@ -272,8 +290,8 @@ namespace ArcadiaCustoms
                 currentlyLoading = false;
             }
 
-            if (LoadLevels.inst != null)
-                LoadLevels.inst.End();
+            if (LoadLevelsManager.inst != null)
+                LoadLevelsManager.inst.End();
 
             yield break;
         }
@@ -282,8 +300,8 @@ namespace ArcadiaCustoms
         {
             yield return new WaitForSeconds(0.1f);
             AudioManager.inst.PlaySound("loadsound");
-            var menu = new GameObject("Main Menu System");
-            object component = UseNewArcadeUI.Value ? menu.AddComponent<ArcadeMenu>() : menu.AddComponent<ArcadeMenuManager>();
+            var menu = new GameObject("Arcade Menu System");
+            Component component = UseNewArcadeUI.Value ? menu.AddComponent<ArcadeMenuManager>() : menu.AddComponent<LevelMenuManager>();
 
             yield break;
         }
