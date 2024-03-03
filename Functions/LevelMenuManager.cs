@@ -373,6 +373,8 @@ namespace ArcadiaCustoms.Functions
                 LevelManager.Path = _val;
             });
 
+            levelAscend = ArcadePlugin.LocalLevelAscend.Value;
+
             var toggleClone = levelList.transform.Find("toggle/toggle").GetComponent<Toggle>();
             //levelList.transform.Find("toggle").GetComponent<RectTransform>().anchoredPosition = new Vector2(1000f, 16f);
             toggleClone.onValueChanged.RemoveAllListeners();
@@ -380,18 +382,21 @@ namespace ArcadiaCustoms.Functions
             toggleClone.onValueChanged.AddListener(delegate (bool _val)
             {
                 levelAscend = _val;
-                SortSongs();
+                Sort();
                 inst.StartCoroutine(GenerateUIList());
             });
 
             var dropdownClone = levelList.transform.Find("orderby dropdown").GetComponent<Dropdown>();
             dropdownClone.onValueChanged.RemoveAllListeners();
             //dropdownClone.GetComponent<RectTransform>().anchoredPosition = new Vector2(901f, 816f);
+
+            levelFilter = (int)ArcadePlugin.LocalLevelOrderby.Value;
+
             dropdownClone.value = levelFilter;
             dropdownClone.onValueChanged.AddListener(delegate (int _val)
             {
                 levelFilter = _val;
-                SortSongs();
+                Sort();
                 inst.StartCoroutine(GenerateUIList());
             });
 
@@ -557,60 +562,9 @@ namespace ArcadiaCustoms.Functions
 
         public static Color offWhite = new Color(0.8679f, 0.86f, 0.9f, 1f);
 
-        public static void SortSongs()
+        public static void Sort()
         {
-            switch (levelFilter)
-            {
-                case 0:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.icon != SteamWorkshop.inst.defaultSteamImageSprite) :
-                            LevelManager.Levels.OrderByDescending(x => x.icon != SteamWorkshop.inst.defaultSteamImageSprite)).ToList();
-                        break;
-                    }
-                case 1:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.artist.Name) :
-                            LevelManager.Levels.OrderByDescending(x => x.metadata.artist.Name)).ToList();
-                        break;
-                    }
-                case 2:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.creator.steam_name) :
-                            LevelManager.Levels.OrderByDescending(x => x.metadata.creator.steam_name)).ToList();
-                        break;
-                    }
-                case 3:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => System.IO.Path.GetFileName(x.path)) :
-                            LevelManager.Levels.OrderByDescending(x => System.IO.Path.GetFileName(x.path))).ToList();
-                        break;
-                    }
-                case 4:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.song.title) :
-                            LevelManager.Levels.OrderByDescending(x => x.metadata.song.title)).ToList();
-                        break;
-                    }
-                case 5:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.song.difficulty) :
-                            LevelManager.Levels.OrderByDescending(x => x.metadata.song.difficulty)).ToList();
-                        break;
-                    }
-                case 6:
-                    {
-                        LevelManager.Levels =
-                            (levelAscend ? LevelManager.Levels.OrderBy(x => x.metadata.beatmap.date_edited) :
-                            LevelManager.Levels.OrderByDescending(x => x.metadata.beatmap.date_edited)).ToList();
-                        break;
-                    }
-            }
+            LevelManager.Sort(levelFilter, levelAscend);
         }
 
         public static IEnumerator GenerateUIList()
