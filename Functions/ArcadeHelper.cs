@@ -34,6 +34,13 @@ namespace ArcadiaCustoms.Functions
 				Debug.Log($"{__instance.className}Setting Player Data");
 				int prevHits = LevelManager.CurrentLevel.playerData != null ? LevelManager.CurrentLevel.playerData.Hits : -1;
 
+				LevelManager.PlayedLevelCount++;
+
+				if (LevelManager.Saves.Where(x => x.Completed).Count() >= 100)
+				{
+					SteamWrapper.inst.achievements.SetAchievement("GREAT_TESTER");
+				}
+
 				if (!PlayerManager.IsZenMode && !PlayerManager.IsPractice)
 				{
 					if (LevelManager.CurrentLevel.playerData == null)
@@ -59,9 +66,9 @@ namespace ArcadiaCustoms.Functions
 					}
 					else
 						LevelManager.Saves.Add(LevelManager.CurrentLevel.playerData);
-
-					LevelManager.SaveProgress();
 				}
+
+				LevelManager.SaveProgress();
 
 				Debug.Log($"{__instance.className}Setting More Info");
 				//More Info
