@@ -411,6 +411,7 @@ namespace ArcadiaCustoms.Functions
             var inter = new GameObject("Interface");
             inter.transform.localScale = Vector3.one * RTHelpers.screenScale;
             menuUI = inter;
+            inter.AddComponent<CursorManager>();
             var interfaceRT = inter.AddComponent<RectTransform>();
             interfaceRT.anchoredPosition = new Vector2(960f, 540f);
             interfaceRT.sizeDelta = new Vector2(1920f, 1080f);
@@ -494,6 +495,9 @@ namespace ArcadiaCustoms.Functions
             };
             close.Clickable.onEnter = delegate (PointerEventData pointerEventData)
             {
+                if (!Cursor.visible)
+                    return;
+
                 AudioManager.inst.PlaySound("LeftRight");
                 selected.y = 0;
                 selected.x = 0;
@@ -529,6 +533,9 @@ namespace ArcadiaCustoms.Functions
                 };
                 tab.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
+                    if (!Cursor.visible)
+                        return;
+
                     AudioManager.inst.PlaySound("LeftRight");
                     selected.y = 0;
                     selected.x = index + 1;
@@ -558,6 +565,34 @@ namespace ArcadiaCustoms.Functions
                     UIManager.SetRectTransform(localSettingsBar.GetObject<RectTransform>(), new Vector2(0f, 360f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1920f, 120f));
 
                     localSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
+
+                    var reload = UIManager.GenerateUIImage("Reload", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(-600f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
+
+                    var reloadClickable = reload.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    reload.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(reload.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        reload.GetObject<Image>().sprite = null;
+
+                    var reloadText = UIManager.GenerateUITextMeshPro("Text", reload.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(reloadText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    reloadText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    reloadText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                    reloadText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    reloadText.GetObject<TextMeshProUGUI>().text = "[RELOAD]";
+
+                    Settings[0].Add(new Tab
+                    {
+                        GameObject = reload.GetObject<GameObject>(),
+                        RectTransform = reload.GetObject<RectTransform>(),
+                        Clickable = reloadClickable,
+                        Image = reload.GetObject<Image>(),
+                        Text = reloadText.GetObject<TextMeshProUGUI>(),
+                    });
 
                     var prevPage = UIManager.GenerateUIImage("Previous", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(prevPage.GetObject<RectTransform>(), new Vector2(500f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
@@ -638,17 +673,34 @@ namespace ArcadiaCustoms.Functions
                     {
                         if (int.TryParse(_val, out int p))
                         {
-                            p = Mathf.Clamp(p, 0, LevelManager.Levels.Count / MaxLevelsPerPage);
+                            p = Mathf.Clamp(p, 0, PageCount / MaxLevelsPerPage);
                             SetLocalLevelsPage(p);
 
                             DataManager.inst.UpdateSettingInt("CurrentArcadePage", p);
                         }
                     });
 
-                    prevPageClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    reloadClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
+                        if (!Cursor.visible)
+                            return;
+
                         AudioManager.inst.PlaySound("LeftRight");
                         selected = new Vector2Int(0, 1);
+                    };
+                    reloadClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        var menu = new GameObject("Load Level System");
+                        menu.AddComponent<LoadLevelsManager>();
+                    };
+
+                    prevPageClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!Cursor.visible)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(1, 1);
                     };
                     prevPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
@@ -657,7 +709,7 @@ namespace ArcadiaCustoms.Functions
                             if (p > 0)
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                this.pageField.text = Mathf.Clamp(p - 1, 0, LevelManager.Levels.Count / MaxLevelsPerPage).ToString();
+                                this.pageField.text = Mathf.Clamp(p - 1, 0, PageCount / MaxLevelsPerPage).ToString();
                             }
                             else
                             {
@@ -668,17 +720,20 @@ namespace ArcadiaCustoms.Functions
 
                     nextPageClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
+                        if (!Cursor.visible)
+                            return;
+
                         AudioManager.inst.PlaySound("LeftRight");
-                        selected = new Vector2Int(1, 1);
+                        selected = new Vector2Int(2, 1);
                     };
                     nextPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
                         if (int.TryParse(this.pageField.text, out int p))
                         {
-                            if (p < LevelManager.Levels.Count / MaxLevelsPerPage)
+                            if (p < PageCount / MaxLevelsPerPage)
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                this.pageField.text = Mathf.Clamp(p + 1, 0, LevelManager.Levels.Count / MaxLevelsPerPage).ToString();
+                                this.pageField.text = Mathf.Clamp(p + 1, 0, PageCount / MaxLevelsPerPage).ToString();
                             }
                             else
                             {
@@ -782,7 +837,7 @@ namespace ArcadiaCustoms.Functions
                 localSearchField.textComponent.color = textColor;
                 localSearchField.onValueChanged.AddListener(delegate (string _val)
                 {
-                    SearchTerm = _val;
+                    LocalSearchTerm = _val;
                 });
             }
 
@@ -953,7 +1008,7 @@ namespace ArcadiaCustoms.Functions
                 {
                     case 1:
                         {
-                            SelectionLimit[1] = 2;
+                            SelectionLimit[1] = 3;
 
                             StartCoroutine(RefreshLocalLevels());
                             break;
@@ -988,13 +1043,14 @@ namespace ArcadiaCustoms.Functions
 
         #region Local
 
-        string searchTerm;
-        public string SearchTerm
+        string localSearchTerm;
+        public string LocalSearchTerm
         {
-            get => searchTerm;
+            get => localSearchTerm;
             set
             {
-                searchTerm = value;
+                localSearchTerm = value;
+                selected = new Vector2Int(0, 2);
                 if (pageField.text != "0")
                     pageField.text = "0";
                 else
@@ -1002,13 +1058,22 @@ namespace ArcadiaCustoms.Functions
             }
         }
 
+        public int PageCount => Levels.Count();
+
+        public IEnumerable<Level> Levels => LevelManager.Levels.Where(level => string.IsNullOrEmpty(LocalSearchTerm)
+                        || level.id == LocalSearchTerm
+                        || level.metadata.artist.Name.ToLower().Contains(LocalSearchTerm.ToLower())
+                        || level.metadata.creator.steam_name.ToLower().Contains(LocalSearchTerm.ToLower())
+                        || level.metadata.song.title.ToLower().Contains(LocalSearchTerm.ToLower())
+                        || level.metadata.song.getDifficulty().ToLower().Contains(LocalSearchTerm.ToLower()));
+
         public void SetLocalLevelsPage(int page)
         {
             CurrentPage[0] = page;
             StartCoroutine(RefreshLocalLevels());
         }
 
-        InputField pageField;
+        public InputField pageField;
 
         Vector2 localLevelsAlignment = new Vector2(-640f, 138f);
 
@@ -1033,21 +1098,17 @@ namespace ArcadiaCustoms.Functions
 
             if (LevelManager.Levels.Count > 0)
             {
-                RTHelpers.AddEventTriggerParams(pageField.gameObject, RTHelpers.ScrollDeltaInt(pageField, max: LevelManager.Levels.Count / MaxLevelsPerPage));
+                RTHelpers.AddEventTriggerParams(pageField.gameObject, RTHelpers.ScrollDeltaInt(pageField, max: PageCount / MaxLevelsPerPage));
+            }
+            else
+            {
+                RTHelpers.AddEventTriggerParams(pageField.gameObject);
             }
 
             int num = 0;
-            foreach (var level in LevelManager.Levels)
+            foreach (var level in Levels)
             {
-                if (!(string.IsNullOrEmpty(SearchTerm)
-                        || level.id == SearchTerm
-                        || level.metadata.artist.Name.ToLower().Contains(SearchTerm.ToLower())
-                        || level.metadata.creator.steam_name.ToLower().Contains(SearchTerm.ToLower())
-                        || level.metadata.song.title.ToLower().Contains(SearchTerm.ToLower())
-                        || level.metadata.song.getDifficulty().ToLower().Contains(SearchTerm.ToLower())))
-                    continue;
-
-                if (level.id != null && num >= max - MaxLevelsPerPage && num < max)
+                if (level.id != null && level.id != "0" && num >= max - MaxLevelsPerPage && num < max)
                 {
                     var gameObject = localLevelPrefab.Duplicate(RegularContents[0]);
 
@@ -1072,6 +1133,9 @@ namespace ArcadiaCustoms.Functions
                     var clickable = gameObject.GetComponent<Clickable>();
                     clickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
+                        if (!Cursor.visible)
+                            return;
+
                         AudioManager.inst.PlaySound("LeftRight");
                         selected.x = column;
                         selected.y = row + 2;
