@@ -40,7 +40,7 @@ namespace ArcadiaCustoms.Functions
             screenScale = (float)Screen.width / 1920f;
             screenScaleInverse = 1f / screenScale;
 
-            inst.StartCoroutine(CreateDialog());
+            StartCoroutine(CreateDialog());
         }
 
         void Update()
@@ -56,9 +56,9 @@ namespace ArcadiaCustoms.Functions
             }
         }
 
-        public static IEnumerator CreateDialog()
+        public IEnumerator CreateDialog()
         {
-            yield return inst.StartCoroutine(DeleteComponents());
+            yield return StartCoroutine(DeleteComponents());
 
             var findButton = (from x in Resources.FindObjectsOfTypeAll<GameObject>()
                               where x.name == "Text Element"
@@ -136,7 +136,7 @@ namespace ArcadiaCustoms.Functions
 
             ((Image)loader["Image"]).color = new Color(0.14f, 0.14f, 0.14f, 1f);
 
-            inst.StartCoroutine(ArcadePlugin.GetLevelList());
+            StartCoroutine(ArcadePlugin.GetLevelList());
 
             yield break;
         }
@@ -157,6 +157,12 @@ namespace ArcadiaCustoms.Functions
                 Destroy(GameObject.Find("VideoPlayer"));
                 Destroy(GameObject.Find("folder"));
                 Destroy(LevelMenuManager.inst.gameObject);
+            }
+            
+            if (ArcadeMenuManager.inst)
+            {
+                Destroy(ArcadeMenuManager.inst.menuUI);
+                Destroy(ArcadeMenuManager.inst.gameObject);
             }
 
             yield break;
