@@ -54,6 +54,28 @@ namespace ArcadiaCustoms
 
         public static ConfigEntry<int> PageFieldRoundness { get; set; }
 
+        public static ConfigEntry<string> LocalLevelsPath { get; set; }
+
+        #region Sorting
+
+        public static ConfigEntry<bool> LocalLevelAscend { get; set; }
+        public static ConfigEntry<LevelSort> LocalLevelOrderby { get; set; }
+
+        public enum LevelSort
+        {
+            Cover,
+            Artist,
+            Creator,
+            File,
+            Title,
+            Difficulty,
+            DateEdited,
+            //DateCreated,
+            //DatePublished,
+        }
+
+        #endregion
+
         #region Shine Config
 
         public static ConfigEntry<bool> OnlyShowShineOnSelected { get; set; }
@@ -110,7 +132,16 @@ namespace ArcadiaCustoms
             PlayLevelMenuIconRoundness = Config.Bind("Arcade", "Play Level Menu Icon Roundness", 2, new ConfigDescription("How rounded the Play Menu Buttons are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
             PlayLevelMenuIconRoundness.SettingChanged += PlayLevelMenuRoundnessChanged;
 
+            LocalLevelOrderby = Config.Bind("Arcade Sorting", "Local Orderby", LevelSort.Cover, "How the level list is ordered.");
+            LocalLevelAscend = Config.Bind("Arcade Sorting", "Local Ascend", true, "If the level order should be up or down.");
+            LocalLevelOrderby.SettingChanged += LocalLevelSortChanged;
+            LocalLevelAscend.SettingChanged += LocalLevelSortChanged;
+
+            LocalLevelsPath = Config.Bind("Level", "Arcade Path in Beatmaps", "arcade", "The location of your local arcade folder.");
+            LocalLevelsPath.SettingChanged += LocalLevelsPathChanged;
+
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
+            LevelManager.Path = LocalLevelsPath.Value;
 
             Logger.LogInfo($"Plugin Arcadia Customs is loaded!");
 
@@ -130,18 +161,53 @@ namespace ArcadiaCustoms
             }
         }
 
-        void PlayLevelMenuRoundnessChanged(object sender, EventArgs e)
+        #region Settings Changed
+
+        void LocalLevelSortChanged(object sender, EventArgs e)
         {
-            PlayLevelMenuManager.inst?.UpdateRoundness();
+            LevelManager.Sort((int)LocalLevelOrderby.Value, LocalLevelAscend.Value);
+
+            if (LevelMenuManager.inst)
+            {
+                LevelMenuManager.levelFilter = (int)LocalLevelOrderby.Value;
+                LevelMenuManager.levelAscend = LocalLevelAscend.Value;
+
+                var toggleClone = LevelMenuManager.levelList.transform.Find("toggle/toggle").GetComponent<Toggle>();
+                toggleClone.onValueChanged.RemoveAllListeners();
+                toggleClone.isOn = LevelMenuManager.levelAscend;
+                toggleClone.onValueChanged.AddListener(delegate (bool _val)
+                {
+                    LevelMenuManager.levelAscend = _val;
+                    LevelMenuManager.Sort();
+                    inst.StartCoroutine(LevelMenuManager.GenerateUIList());
+                });
+
+                var dropdownClone = LevelMenuManager.levelList.transform.Find("orderby dropdown").GetComponent<Dropdown>();
+                dropdownClone.onValueChanged.RemoveAllListeners();
+                dropdownClone.value = LevelMenuManager.levelFilter;
+                dropdownClone.onValueChanged.AddListener(delegate (int _val)
+                {
+                    LevelMenuManager.levelFilter = _val;
+                    LevelMenuManager.Sort();
+                    inst.StartCoroutine(LevelMenuManager.GenerateUIList());
+                });
+
+                StartCoroutine(LevelMenuManager.GenerateUIList());
+            }
+
+            if (ArcadeMenuManager.inst)
+            {
+                ArcadeMenuManager.inst.selected = new Vector2Int(0, 2);
+                if (ArcadeMenuManager.inst.pageField.text != "0")
+                    ArcadeMenuManager.inst.pageField.text = "0";
+                else
+                    StartCoroutine(ArcadeMenuManager.inst.RefreshLocalLevels());
+            }
         }
 
-        void MiscRoundedChanged(object sender, EventArgs e)
-        {
-            if (!ArcadeMenuManager.inst)
-                return;
+        void PlayLevelMenuRoundnessChanged(object sender, EventArgs e) => PlayLevelMenuManager.inst?.UpdateRoundness();
 
-            ArcadeMenuManager.inst.UpdateMiscRoundness();
-        }
+        void MiscRoundedChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateMiscRoundness();
 
         void LocalLevelPanelsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateLocalLevelsRoundness();
 
@@ -152,7 +218,14 @@ namespace ArcadiaCustoms
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
         }
 
-        public static void MainMenuTester()
+        void LocalLevelsPathChanged(object sender, EventArgs e)
+        {
+            LevelManager.Path = LocalLevelsPath.Value;
+        }
+
+        #endregion
+
+        public static void ReloadMenu()
         {
             if (fromLevel)
             {
@@ -179,24 +252,9 @@ namespace ArcadiaCustoms
                 DataManager.inst.UpdateSettingBool("IsArcade", true);
 
                 if (!RTFile.DirectoryExists(RTFile.ApplicationDirectory + LevelManager.ListPath))
-                {
                     Directory.CreateDirectory(RTFile.ApplicationDirectory + LevelManager.ListPath);
 
-                    //SceneManager.inst.LoadScene("Input Select");
-                    //currentlyLoading = false;
-                    //System.Windows.Forms.MessageBox.Show("Arcade directory does not exist!");
-                    //yield break;
-                }
-
                 var directories = Directory.GetDirectories(RTFile.ApplicationDirectory + LevelManager.ListPath, "*", SearchOption.TopDirectoryOnly);
-
-                //if (directories.Length < 1)
-                //{
-                //    SceneManager.inst.LoadScene("Input Select");
-                //    currentlyLoading = false;
-                //    System.Windows.Forms.MessageBox.Show("No levels to load!");
-                //    yield break;
-                //}
 
                 if (LoadLevelsManager.inst != null)
                     LoadLevelsManager.totalLevelCount = directories.Length;
@@ -205,9 +263,10 @@ namespace ArcadiaCustoms
                 LevelManager.ArcadeQueue.Clear();
                 LevelManager.LoadProgress();
 
-                int num = 0;
-                foreach (var folder in directories)
+                for (int i = 0; i < directories.Length; i++)
                 {
+                    var folder = directories[i];
+
                     if (LoadLevelsManager.inst != null && LoadLevelsManager.inst.cancelled)
                     {
                         SceneManager.inst.LoadScene("Input Select");
@@ -230,11 +289,9 @@ namespace ArcadiaCustoms
                     if (metadata == null)
                     {
                         if (LoadLevelsManager.inst)
-                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No metadata in {name}</color>", num, true);
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No metadata in {name}</color>", i, true);
 
                         yield return new WaitForSeconds(0.5f);
-
-                        num++;
 
                         continue;
                     }
@@ -243,11 +300,9 @@ namespace ArcadiaCustoms
                         && !RTFile.FileExists($"{path}/audio.ogg") && !RTFile.FileExists($"{path}/audio.wav") && !RTFile.FileExists($"{path}/audio.mp3"))
                     {
                         if (LoadLevelsManager.inst)
-                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", i, true);
 
                         yield return new WaitForSeconds(0.5f);
-
-                        num++;
 
                         continue;
                     }
@@ -255,11 +310,9 @@ namespace ArcadiaCustoms
                     if (!RTFile.FileExists($"{path}/level.lsb") && !RTFile.FileExists($"{path}/level.vgd"))
                     {
                         if (LoadLevelsManager.inst)
-                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", num, true);
+                            LoadLevelsManager.inst.UpdateInfo(SteamWorkshop.inst.defaultSteamImageSprite, $"<color=$FF0000>No song in {name}</color>", i, true);
 
                         yield return new WaitForSeconds(0.01f);
-
-                        num++;
 
                         continue;
                     }
@@ -279,12 +332,11 @@ namespace ArcadiaCustoms
                         level.playerData = LevelManager.Saves.Find(x => x.ID == level.id);
 
                     if (LoadLevelsManager.inst)
-                        LoadLevelsManager.inst.UpdateInfo(level.icon, $"Loading {name}", num);
+                        LoadLevelsManager.inst.UpdateInfo(level.icon, $"Loading {name}", i);
 
                     LevelManager.Levels.Add(level);
 
                     delay += 0.0001f;
-                    num++;
                 }
 
                 currentlyLoading = false;
