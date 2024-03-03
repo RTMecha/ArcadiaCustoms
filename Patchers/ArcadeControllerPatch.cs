@@ -30,7 +30,7 @@ namespace ArcadiaCustoms.Patchers
 			}
 
 			InputDataManager.inst.playersCanJoin = false;
-			ArcadePlugin.MainMenuTester();
+			ArcadePlugin.ReloadMenu();
 			return true;
         }
 	}
