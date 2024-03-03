@@ -38,11 +38,6 @@ namespace ArcadiaCustoms.Functions
 
         void Update()
         {
-            if (!ArcadeMenuManager.inst || !ArcadeMenuManager.inst.OpenedLevel)
-                return;
-
-            UpdateControls();
-
             if (!inSettings)
             {
                 for (int i = 0; i < Buttons.Count; i++)
@@ -79,6 +74,12 @@ namespace ArcadiaCustoms.Functions
 
             background.color = LSColors.HexToColor(currentTheme["values"]["bg"]);
             settingsImage1.color = background.color;
+
+            if (!ArcadeMenuManager.inst || !ArcadeMenuManager.inst.OpenedLevel)
+                return;
+
+            UpdateControls();
+
         }
 
         public bool animating;
@@ -228,7 +229,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 play.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (inSettings)
+                    if (inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -269,7 +270,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 play.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (inSettings)
+                    if (inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -301,7 +302,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 play.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (inSettings)
+                    if (inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -333,7 +334,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 play.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (inSettings)
+                    if (inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -370,7 +371,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 play.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (inSettings)
+                    if (inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -450,7 +451,7 @@ namespace ArcadiaCustoms.Functions
                 zen.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 zen.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -470,7 +471,7 @@ namespace ArcadiaCustoms.Functions
                 speed1.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed1.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -493,7 +494,7 @@ namespace ArcadiaCustoms.Functions
                 normal.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 normal.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -513,7 +514,7 @@ namespace ArcadiaCustoms.Functions
                 speed2.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed2.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -536,7 +537,7 @@ namespace ArcadiaCustoms.Functions
                 life.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 life.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -556,7 +557,7 @@ namespace ArcadiaCustoms.Functions
                 speed3.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed3.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -579,7 +580,7 @@ namespace ArcadiaCustoms.Functions
                 hit.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 hit.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -599,7 +600,7 @@ namespace ArcadiaCustoms.Functions
                 speed4.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed4.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -622,7 +623,7 @@ namespace ArcadiaCustoms.Functions
                 practice.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 practice.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -642,7 +643,7 @@ namespace ArcadiaCustoms.Functions
                 speed5.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed5.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -665,7 +666,7 @@ namespace ArcadiaCustoms.Functions
                 speed6.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed6.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -688,7 +689,7 @@ namespace ArcadiaCustoms.Functions
                 speed7.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed7.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -711,7 +712,7 @@ namespace ArcadiaCustoms.Functions
                 speed8.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
                 speed8.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!inSettings)
+                    if (!inSettings || !Cursor.visible)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -807,7 +808,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed2.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -829,7 +829,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed3.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -851,7 +850,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed4.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -873,7 +871,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed5.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -895,7 +892,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed6.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -917,7 +913,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed7.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
@@ -939,7 +934,6 @@ namespace ArcadiaCustoms.Functions
                     speed7.Text.text = $"[2.0x = {arcadeSpeed == 6}]";
                     speed8.Text.text = $"[3.0x = {arcadeSpeed == 7}]";
                 };
-
                 speed8.Clickable.onClick = delegate (PointerEventData pointerEventData)
                 {
                     if (!inSettings)
