@@ -75,7 +75,7 @@ namespace ArcadiaCustoms.Functions
             background.color = LSColors.HexToColor(currentTheme["values"]["bg"]);
             settingsImage1.color = background.color;
 
-            if (!ArcadeMenuManager.inst || !ArcadeMenuManager.inst.OpenedLevel)
+            if (!ArcadeMenuManager.inst || !ArcadeMenuManager.inst.OpenedLocalLevel)
                 return;
 
             UpdateControls();
@@ -1129,7 +1129,7 @@ namespace ArcadiaCustoms.Functions
                 AnimationManager.inst.RemoveID(animation.id);
                 animating = false;
 
-                ArcadeMenuManager.inst.OpenedLevel = true;
+                ArcadeMenuManager.inst.OpenedLocalLevel = true;
             };
             AnimationManager.inst.Play(animation);
         }
@@ -1156,7 +1156,7 @@ namespace ArcadiaCustoms.Functions
                 AnimationManager.inst.RemoveID(animation.id);
                 animating = false;
 
-                ArcadeMenuManager.inst.OpenedLevel = false;
+                ArcadeMenuManager.inst.OpenedLocalLevel = false;
             };
             AnimationManager.inst.Play(animation);
         }
