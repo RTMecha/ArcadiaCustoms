@@ -55,6 +55,7 @@ namespace ArcadiaCustoms
         public static ConfigEntry<int> PageFieldRoundness { get; set; }
 
         public static ConfigEntry<string> LocalLevelsPath { get; set; }
+        public static ConfigEntry<bool> OpenOnlineLevelAfterDownload { get; set; }
 
         #region Sorting
 
@@ -140,6 +141,8 @@ namespace ArcadiaCustoms
             LocalLevelsPath = Config.Bind("Level", "Arcade Path in Beatmaps", "arcade", "The location of your local arcade folder.");
             LocalLevelsPath.SettingChanged += LocalLevelsPathChanged;
 
+            OpenOnlineLevelAfterDownload = Config.Bind("Arcade", "Open After Download", true, "If the Play Level Menu should open once the level has finished downloading.");
+
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
             LevelManager.Path = LocalLevelsPath.Value;
 
@@ -147,17 +150,10 @@ namespace ArcadiaCustoms
 
             harmony.PatchAll();
 
-            try
+            if (!ModCompatibility.mods.ContainsKey("ArcadiaCustoms"))
             {
-                if (!ModCompatibility.mods.ContainsKey("ArcadiaCustoms"))
-                {
-                    var mod = new ModCompatibility.Mod(this, GetType());
-                    ModCompatibility.mods.Add("ArcadiaCustoms", mod);
-                }
-            }
-            catch (Exception ex)
-            {
-                Logger.LogError("Mod Error" + ex.ToString());
+                var mod = new ModCompatibility.Mod(this, GetType());
+                ModCompatibility.mods.Add("ArcadiaCustoms", mod);
             }
         }
 
@@ -198,8 +194,8 @@ namespace ArcadiaCustoms
             if (ArcadeMenuManager.inst)
             {
                 ArcadeMenuManager.inst.selected = new Vector2Int(0, 2);
-                if (ArcadeMenuManager.inst.pageField.text != "0")
-                    ArcadeMenuManager.inst.pageField.text = "0";
+                if (ArcadeMenuManager.inst.localPageField.text != "0")
+                    ArcadeMenuManager.inst.localPageField.text = "0";
                 else
                     StartCoroutine(ArcadeMenuManager.inst.RefreshLocalLevels());
             }
