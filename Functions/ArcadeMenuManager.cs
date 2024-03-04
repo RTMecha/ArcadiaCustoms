@@ -25,6 +25,13 @@ using RTFunctions.Functions.Managers;
 using RTFunctions.Functions.Managers.Networking;
 using RTFunctions.Functions.Animation.Keyframe;
 using Ease = RTFunctions.Functions.Animation.Ease;
+using SimpleJSON;
+using System.IO;
+using System.IO.Compression;
+using Crosstales.FB;
+using System.Windows.Forms;
+using Cursor = UnityEngine.Cursor;
+using Screen = UnityEngine.Screen;
 
 #pragma warning disable CS0618 // Type or member is obsolete
 namespace ArcadiaCustoms.Functions
@@ -83,7 +90,7 @@ namespace ArcadiaCustoms.Functions
 
         public int CurrentTab { get; set; } = 0;
 
-        public List<ArcadeLevelButton> LocalLevels { get; set; } = new List<ArcadeLevelButton>();
+        public List<LocalLevelButton> LocalLevels { get; set; } = new List<LocalLevelButton>();
 
         #endregion
 
@@ -103,7 +110,8 @@ namespace ArcadiaCustoms.Functions
 
         #region Open
 
-        public bool OpenedLevel { get; set; }
+        public bool OpenedLocalLevel { get; set; }
+        public bool OpenedOnlineLevel { get; set; }
 
         #endregion
 
@@ -127,7 +135,7 @@ namespace ArcadiaCustoms.Functions
         {
             UpdateTheme();
 
-            if (!init || OpenedLevel)
+            if (!init || OpenedLocalLevel || OpenedOnlineLevel)
                 return;
 
             UpdateControls();
@@ -137,18 +145,19 @@ namespace ArcadiaCustoms.Functions
                 Tabs[i].Text.color = selected.y == 0 && i == selected.x ? textHighlightColor : textColor;
                 Tabs[i].Image.color = selected.y == 0 && i == selected.x ? highlightColor : Color.Lerp(buttonBGColor, Color.white, 0.01f);
             }
-            
+
             for (int i = 0; i < Settings[CurrentTab].Count; i++)
             {
-                Settings[CurrentTab][i].Text.color = selected.y == 1 && i == selected.x ? textHighlightColor : textColor;
-                Settings[CurrentTab][i].Image.color = selected.y == 1 && i == selected.x ? highlightColor : Color.Lerp(buttonBGColor, Color.white, 0.01f);
+                var setting = Settings[CurrentTab][i];
+                setting.Text.color = selected.y == setting.Position.y && setting.Position.x == selected.x ? textHighlightColor : textColor;
+                setting.Image.color = selected.y == setting.Position.y && setting.Position.x == selected.x ? highlightColor : Color.Lerp(buttonBGColor, Color.white, 0.01f);
             }
 
             try
             {
                 if (CurrentTab == 0)
                 {
-                    pageField.caretColor = highlightColor;
+                    localPageField.caretColor = highlightColor;
                     localSearchField.caretColor = highlightColor;
 
                     var selectOnly = ArcadePlugin.OnlyShowShineOnSelected.Value;
@@ -254,6 +263,88 @@ namespace ArcadiaCustoms.Functions
                         }
                     }
                 }
+
+                if (CurrentTab == 1)
+                {
+                    onlinePageField.caretColor = highlightColor;
+                    onlineSearchField.caretColor = highlightColor;
+
+                    foreach (var level in OnlineLevels)
+                    {
+                        if (loadingOnlineLevels)
+                            break;
+
+                        var isSelected = selected.x == level.Position.x && selected.y - 3 == level.Position.y;
+
+                        level.TitleText.color = isSelected ? textHighlightColor : textColor;
+                        level.BaseImage.color = isSelected ? highlightColor : buttonBGColor;
+
+                        if (isSelected && !LSHelpers.IsUsingInputField() && InputDataManager.inst.menuActions.Submit.WasPressed)
+                        {
+                            level.Clickable?.onClick?.Invoke(null);
+                        }
+
+                        if (level.selected != isSelected)
+                        {
+                            level.selected = isSelected;
+                            if (level.selected)
+                            {
+                                if (level.ExitAnimation != null)
+                                {
+                                    AnimationManager.inst.RemoveID(level.ExitAnimation.id);
+                                }
+
+                                level.EnterAnimation = new AnimationManager.Animation("Enter Animation");
+                                level.EnterAnimation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>
+                                {
+                                    new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
+                                    {
+                                        new FloatKeyframe(0f, 1f, Ease.Linear),
+                                        new FloatKeyframe(0.3f, 1.1f, Ease.CircOut),
+                                        new FloatKeyframe(0.31f, 1.1f, Ease.Linear),
+                                    }, delegate (float x)
+                                    {
+                                        if (level.RectTransform != null)
+                                            level.RectTransform.localScale = new Vector3(x, x, 1f);
+                                    }),
+                                };
+                                level.EnterAnimation.onComplete = delegate ()
+                                {
+                                    AnimationManager.inst.RemoveID(level.EnterAnimation.id);
+                                };
+                                AnimationManager.inst.Play(level.EnterAnimation);
+                            }
+                            else
+                            {
+                                if (level.EnterAnimation != null)
+                                {
+                                    AnimationManager.inst.RemoveID(level.EnterAnimation.id);
+                                }
+
+                                level.ExitAnimation = new AnimationManager.Animation("Exit Animation");
+                                level.ExitAnimation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>
+                                {
+                                    new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
+                                    {
+                                        new FloatKeyframe(0f, 1.1f, Ease.Linear),
+                                        new FloatKeyframe(0.3f, 1f, Ease.BounceOut),
+                                        new FloatKeyframe(0.31f, 1f, Ease.Linear),
+                                    }, delegate (float x)
+                                    {
+                                        if (level.RectTransform != null)
+                                            level.RectTransform.localScale = new Vector3(x, x, 1f);
+                                    }),
+                                };
+                                level.ExitAnimation.onComplete = delegate ()
+                                {
+                                    AnimationManager.inst.RemoveID(level.ExitAnimation.id);
+                                };
+                                AnimationManager.inst.Play(level.ExitAnimation);
+                            }
+                        }
+
+                    }
+                }
             }
             catch
             {
@@ -263,7 +354,7 @@ namespace ArcadiaCustoms.Functions
 
         void UpdateControls()
         {
-            if (LSHelpers.IsUsingInputField())
+            if (LSHelpers.IsUsingInputField() || loadingOnlineLevels || loadingLocalLevels)
                 return;
 
             var actions = InputDataManager.inst.menuActions;
@@ -324,6 +415,11 @@ namespace ArcadiaCustoms.Functions
             {
                 Settings[CurrentTab][selected.x].Clickable.onClick?.Invoke(null);
             }
+            
+            if (actions.Submit.WasPressed && selected.y == 2 && CurrentTab == 1)
+            {
+                Settings[CurrentTab][selected.x].Clickable.onClick?.Invoke(null);
+            }
 
             if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.Alpha1))
             {
@@ -379,6 +475,8 @@ namespace ArcadiaCustoms.Functions
             textHighlightColor = currentTheme["values"]["text-highlight"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["text-highlight"]);
             buttonBGColor = currentTheme["values"]["buttonbg"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["buttonbg"]);
         }
+
+        public bool CanSelect => Cursor.visible && !loadingOnlineLevels && !loadingLocalLevels;
 
         #region Setup
 
@@ -442,7 +540,7 @@ namespace ArcadiaCustoms.Functions
 
             var selectionBaseRT = selectionBase.AddComponent<RectTransform>();
             selectionBaseRT.anchoredPosition = Vector2.zero;
-            
+
             var playLevelMenuBase = new GameObject("Play Level Menu");
             playLevelMenuBase.transform.SetParent(inter.transform);
             playLevelMenuBase.transform.localScale = Vector3.one;
@@ -458,6 +556,22 @@ namespace ArcadiaCustoms.Functions
             playLevelMenu.background = playLevelMenuImage;
 
             StartCoroutine(playLevelMenu.SetupPlayLevelMenu());
+            
+            var downloadLevelMenuBase = new GameObject("Download Level Menu");
+            downloadLevelMenuBase.transform.SetParent(inter.transform);
+            downloadLevelMenuBase.transform.localScale = Vector3.one;
+
+            var downloadLevelMenuBaseRT = downloadLevelMenuBase.AddComponent<RectTransform>();
+            downloadLevelMenuBaseRT.anchoredPosition = new Vector2(0f, -1080f);
+            downloadLevelMenuBaseRT.sizeDelta = new Vector2(1920f, 1080f);
+
+            var downloadLevelMenuImage = downloadLevelMenuBase.AddComponent<Image>();
+
+            var downloadLevelMenu = downloadLevelMenuBase.AddComponent<DownloadLevelMenuManager>();
+            downloadLevelMenu.rectTransform = downloadLevelMenuBaseRT;
+            downloadLevelMenu.background = downloadLevelMenuImage;
+
+            StartCoroutine(downloadLevelMenu.SetupDownloadLevelMenu());
 
             var topBar = UIManager.GenerateUIImage("Top Bar", selectionBaseRT);
 
@@ -495,7 +609,7 @@ namespace ArcadiaCustoms.Functions
             };
             close.Clickable.onEnter = delegate (PointerEventData pointerEventData)
             {
-                if (!Cursor.visible)
+                if (!CanSelect)
                     return;
 
                 AudioManager.inst.PlaySound("LeftRight");
@@ -533,7 +647,7 @@ namespace ArcadiaCustoms.Functions
                 };
                 tab.Clickable.onEnter = delegate (PointerEventData pointerEventData)
                 {
-                    if (!Cursor.visible)
+                    if (!CanSelect)
                         return;
 
                     AudioManager.inst.PlaySound("LeftRight");
@@ -592,6 +706,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = reloadClickable,
                         Image = reload.GetObject<Image>(),
                         Text = reloadText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(0, 1),
                     });
 
                     var prevPage = UIManager.GenerateUIImage("Previous", localSettingsBar.GetObject<RectTransform>());
@@ -620,6 +735,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = prevPageClickable,
                         Image = prevPage.GetObject<Image>(),
                         Text = prevPageText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(1, 1),
                     });
 
                     var pageField = UIManager.GenerateUIInputField("Page", localSettingsBar.GetObject<RectTransform>());
@@ -629,17 +745,17 @@ namespace ArcadiaCustoms.Functions
                     ((Text)pageField["Placeholder"]).alignment = TextAnchor.MiddleCenter;
                     ((Text)pageField["Placeholder"]).text = "Page...";
                     ((Text)pageField["Placeholder"]).color = LSColors.fadeColor(RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor)), 0.2f);
-                    this.pageField = pageField.GetObject<InputField>();
-                    this.pageField.onValueChanged.ClearAll();
-                    this.pageField.textComponent.alignment = TextAnchor.MiddleCenter;
-                    this.pageField.textComponent.fontSize = 30;
-                    this.pageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
-                    this.pageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
+                    localPageField = pageField.GetObject<InputField>();
+                    localPageField.onValueChanged.ClearAll();
+                    localPageField.textComponent.alignment = TextAnchor.MiddleCenter;
+                    localPageField.textComponent.fontSize = 30;
+                    localPageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
+                    localPageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
 
                     if (ArcadePlugin.MiscRounded.Value)
-                        SpriteManager.SetRoundedSprite(this.pageField.image, 1, SpriteManager.RoundedSide.W);
+                        SpriteManager.SetRoundedSprite(localPageField.image, 1, SpriteManager.RoundedSide.W);
                     else
-                        this.pageField.image.sprite = null;
+                        localPageField.image.sprite = null;
 
                     var nextPage = UIManager.GenerateUIImage("Next", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(nextPage.GetObject<RectTransform>(), new Vector2(800f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
@@ -667,13 +783,14 @@ namespace ArcadiaCustoms.Functions
                         Clickable = nextPageClickable,
                         Image = nextPage.GetObject<Image>(),
                         Text = nextPageText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(2, 1),
                     });
 
-                    this.pageField.onValueChanged.AddListener(delegate (string _val)
+                    localPageField.onValueChanged.AddListener(delegate (string _val)
                     {
                         if (int.TryParse(_val, out int p))
                         {
-                            p = Mathf.Clamp(p, 0, PageCount / MaxLevelsPerPage);
+                            p = Mathf.Clamp(p, 0, LocalPageCount);
                             SetLocalLevelsPage(p);
 
                             DataManager.inst.UpdateSettingInt("CurrentArcadePage", p);
@@ -682,7 +799,7 @@ namespace ArcadiaCustoms.Functions
 
                     reloadClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
-                        if (!Cursor.visible)
+                        if (!CanSelect)
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
@@ -696,7 +813,7 @@ namespace ArcadiaCustoms.Functions
 
                     prevPageClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
-                        if (!Cursor.visible)
+                        if (!CanSelect)
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
@@ -704,12 +821,12 @@ namespace ArcadiaCustoms.Functions
                     };
                     prevPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
-                        if (int.TryParse(this.pageField.text, out int p))
+                        if (int.TryParse(localPageField.text, out int p))
                         {
                             if (p > 0)
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                this.pageField.text = Mathf.Clamp(p - 1, 0, PageCount / MaxLevelsPerPage).ToString();
+                                localPageField.text = Mathf.Clamp(p - 1, 0, LocalPageCount).ToString();
                             }
                             else
                             {
@@ -720,7 +837,7 @@ namespace ArcadiaCustoms.Functions
 
                     nextPageClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
-                        if (!Cursor.visible)
+                        if (!CanSelect)
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
@@ -728,12 +845,12 @@ namespace ArcadiaCustoms.Functions
                     };
                     nextPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
-                        if (int.TryParse(this.pageField.text, out int p))
+                        if (int.TryParse(localPageField.text, out int p))
                         {
-                            if (p < PageCount / MaxLevelsPerPage)
+                            if (p < LocalPageCount)
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                this.pageField.text = Mathf.Clamp(p + 1, 0, PageCount / MaxLevelsPerPage).ToString();
+                                localPageField.text = Mathf.Clamp(p + 1, 0, LocalPageCount).ToString();
                             }
                             else
                             {
@@ -853,12 +970,246 @@ namespace ArcadiaCustoms.Functions
 
                 RegularBases.Add(onlineRT);
 
-                var onlineSettingsBar = UIManager.GenerateUIImage("Settings Bar", onlineRT);
+                // Settings
+                {
+                    var localSettingsBar = UIManager.GenerateUIImage("Settings Bar", onlineRT);
 
-                var onlineSettingsBarRT = onlineSettingsBar.GetObject<RectTransform>();
-                UIManager.SetRectTransform(onlineSettingsBarRT, new Vector2(0f, 360f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1920f, 120f));
+                    UIManager.SetRectTransform(localSettingsBar.GetObject<RectTransform>(), new Vector2(0f, 360f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1920f, 120f));
 
-                onlineSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
+                    localSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
+
+                    var prevPage = UIManager.GenerateUIImage("Previous", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(prevPage.GetObject<RectTransform>(), new Vector2(500f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
+
+                    var prevPageClickable = prevPage.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    prevPage.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(prevPage.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        prevPage.GetObject<Image>().sprite = null;
+
+                    var prevPageText = UIManager.GenerateUITextMeshPro("Text", prevPage.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(prevPageText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    prevPageText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    prevPageText.GetObject<TextMeshProUGUI>().fontSize = 64;
+                    prevPageText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    prevPageText.GetObject<TextMeshProUGUI>().text = "<";
+
+                    Settings[1].Add(new Tab
+                    {
+                        GameObject = prevPage.GetObject<GameObject>(),
+                        RectTransform = prevPage.GetObject<RectTransform>(),
+                        Clickable = prevPageClickable,
+                        Image = prevPage.GetObject<Image>(),
+                        Text = prevPageText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(0, 1),
+                    });
+
+                    var pageField = UIManager.GenerateUIInputField("Page", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(pageField.GetObject<RectTransform>(), new Vector2(650f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(150f, 64f));
+                    pageField.GetObject<Image>().color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(Color.Lerp(buttonBGColor, Color.black, 0.2f)));
+
+                    ((Text)pageField["Placeholder"]).alignment = TextAnchor.MiddleCenter;
+                    ((Text)pageField["Placeholder"]).text = "Page...";
+                    ((Text)pageField["Placeholder"]).color = LSColors.fadeColor(RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor)), 0.2f);
+                    onlinePageField = pageField.GetObject<InputField>();
+                    onlinePageField.onValueChanged.ClearAll();
+                    onlinePageField.textComponent.alignment = TextAnchor.MiddleCenter;
+                    onlinePageField.textComponent.fontSize = 30;
+                    onlinePageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
+                    onlinePageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
+
+                    if (ArcadePlugin.MiscRounded.Value)
+                        SpriteManager.SetRoundedSprite(localPageField.image, 1, SpriteManager.RoundedSide.W);
+                    else
+                        localPageField.image.sprite = null;
+
+                    var nextPage = UIManager.GenerateUIImage("Next", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(nextPage.GetObject<RectTransform>(), new Vector2(800f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
+
+                    var nextPageClickable = nextPage.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    nextPage.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(nextPage.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        nextPage.GetObject<Image>().sprite = null;
+
+                    var nextPageText = UIManager.GenerateUITextMeshPro("Text", nextPage.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(nextPageText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    nextPageText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    nextPageText.GetObject<TextMeshProUGUI>().fontSize = 64;
+                    nextPageText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    nextPageText.GetObject<TextMeshProUGUI>().text = ">";
+
+                    Settings[1].Add(new Tab
+                    {
+                        GameObject = nextPage.GetObject<GameObject>(),
+                        RectTransform = nextPage.GetObject<RectTransform>(),
+                        Clickable = nextPageClickable,
+                        Image = nextPage.GetObject<Image>(),
+                        Text = nextPageText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(1, 1),
+                    });
+
+                    onlinePageField.onValueChanged.AddListener(delegate (string _val)
+                    {
+                        if (CanSelect && int.TryParse(_val, out int p))
+                        {
+                            p = Mathf.Clamp(p, 0, OnlineLevelCount);
+                            SetOnlineLevelsPage(p);
+
+                            DataManager.inst.UpdateSettingInt("CurrentArcadePage", p);
+                        }
+                    });
+
+                    prevPageClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(0, 1);
+                    };
+                    prevPageClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        if (int.TryParse(onlinePageField.text, out int p))
+                        {
+                            if (p > 0)
+                            {
+                                AudioManager.inst.PlaySound("blip");
+                                onlinePageField.text = Mathf.Clamp(p - 1, 0, OnlineLevelCount).ToString();
+                            }
+                            else
+                            {
+                                AudioManager.inst.PlaySound("Block");
+                            }
+                        }
+                    };
+
+                    nextPageClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(1, 1);
+                    };
+                    nextPageClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        if (int.TryParse(onlinePageField.text, out int p))
+                        {
+                            if (p < OnlineLevelCount)
+                            {
+                                AudioManager.inst.PlaySound("blip");
+                                onlinePageField.text = Mathf.Clamp(p + 1, 0, OnlineLevelCount).ToString();
+                            }
+                            else
+                            {
+                                AudioManager.inst.PlaySound("Block");
+                            }
+                        }
+                    };
+                }
+
+                var left = UIManager.GenerateUIImage("Left", onlineRT);
+                UIManager.SetRectTransform(left.GetObject<RectTransform>(), new Vector2(-880f, 300f), ZeroFive, ZeroFive, new Vector2(0.5f, 1f), new Vector2(160f, 838f));
+                left.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.04f);
+
+                var right = UIManager.GenerateUIImage("Right", onlineRT);
+                UIManager.SetRectTransform(right.GetObject<RectTransform>(), new Vector2(880f, 300f), ZeroFive, ZeroFive, new Vector2(0.5f, 1f), new Vector2(160f, 838f));
+                right.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.04f);
+
+                var regularContent = new GameObject("Regular Content");
+                regularContent.transform.SetParent(onlineRT);
+                regularContent.transform.localScale = Vector3.one;
+
+                var regularContentRT = regularContent.AddComponent<RectTransform>();
+                regularContentRT.anchoredPosition = Vector2.zero;
+                regularContentRT.sizeDelta = Vector3.zero;
+
+                RegularContents.Add(regularContentRT);
+
+                var selectedContent = new GameObject("Selected Content");
+                selectedContent.transform.SetParent(onlineRT);
+                selectedContent.transform.localScale = Vector3.one;
+
+                var selectedContentRT = selectedContent.AddComponent<RectTransform>();
+                selectedContentRT.anchoredPosition = Vector2.zero;
+                selectedContentRT.sizeDelta = Vector3.zero;
+
+                SelectedContents.Add(selectedContentRT);
+
+                var searchField = UIManager.GenerateUIInputField("Search", onlineRT);
+
+                UIManager.SetRectTransform(searchField.GetObject<RectTransform>(), new Vector2(-100f, 270f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1400f, 60f));
+
+                if (ArcadePlugin.MiscRounded.Value)
+                    SpriteManager.SetRoundedSprite(searchField.GetObject<Image>(), 1, SpriteManager.RoundedSide.Bottom);
+                else
+                    searchField.GetObject<Image>().sprite = null;
+
+                onlineSearchFieldImage = searchField.GetObject<Image>();
+
+                searchField.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.black, 0.2f);
+
+                ((Text)searchField["Placeholder"]).alignment = TextAnchor.MiddleLeft;
+                ((Text)searchField["Placeholder"]).text = "Search for level...";
+                ((Text)searchField["Placeholder"]).color = LSColors.fadeColor(textColor, 0.2f);
+                onlineSearchField = searchField.GetObject<InputField>();
+                onlineSearchField.onValueChanged.ClearAll();
+                onlineSearchField.textComponent.alignment = TextAnchor.MiddleLeft;
+                onlineSearchField.textComponent.color = textColor;
+                onlineSearchField.onValueChanged.AddListener(delegate (string _val)
+                {
+                    OnlineSearchTerm = _val;
+                });
+
+                var reload = UIManager.GenerateUIImage("Reload", onlineRT);
+                UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(700f, 270f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 60f));
+
+                var reloadClickable = reload.GetObject<GameObject>().AddComponent<Clickable>();
+
+                reload.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                if (ArcadePlugin.TabsRoundedness.Value != 0)
+                    SpriteManager.SetRoundedSprite(reload.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                else
+                    reload.GetObject<Image>().sprite = null;
+
+                var reloadText = UIManager.GenerateUITextMeshPro("Text", reload.GetObject<RectTransform>());
+                UIManager.SetRectTransform(reloadText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                reloadText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                reloadText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                reloadText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                reloadText.GetObject<TextMeshProUGUI>().text = "[SEARCH]";
+
+                reloadClickable.onEnter = delegate (PointerEventData pointerEventData)
+                {
+                    if (!CanSelect)
+                        return;
+
+                    AudioManager.inst.PlaySound("LeftRight");
+                    selected = new Vector2Int(0, 2);
+                };
+                reloadClickable.onClick = delegate (PointerEventData pointerEventData)
+                {
+                    StartCoroutine(SearchOnlineLevels());
+                };
+
+                Settings[1].Add(new Tab
+                {
+                    GameObject = reload.GetObject<GameObject>(),
+                    RectTransform = reload.GetObject<RectTransform>(),
+                    Clickable = reloadClickable,
+                    Image = reload.GetObject<Image>(),
+                    Text = reloadText.GetObject<TextMeshProUGUI>(),
+                    Position = new Vector2Int(0, 2),
+                });
+
             }
 
             // Browser
@@ -873,12 +1224,57 @@ namespace ArcadiaCustoms.Functions
 
                 RegularBases.Add(browserRT);
 
-                var browserSettingsBar = UIManager.GenerateUIImage("Settings Bar", browserRT);
+                // Settings
+                {
+                    var localSettingsBar = UIManager.GenerateUIImage("Settings Bar", browserRT);
 
-                var browserSettingsBarRT = browserSettingsBar.GetObject<RectTransform>();
-                UIManager.SetRectTransform(browserSettingsBarRT, new Vector2(0f, 360f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1920f, 120f));
+                    UIManager.SetRectTransform(localSettingsBar.GetObject<RectTransform>(), new Vector2(0f, 360f), ZeroFive, ZeroFive, ZeroFive, new Vector2(1920f, 120f));
 
-                browserSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
+                    localSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
+
+                    var reload = UIManager.GenerateUIImage("Select", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(-600f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(400f, 64f));
+
+                    var reloadClickable = reload.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    reload.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(reload.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        reload.GetObject<Image>().sprite = null;
+
+                    var reloadText = UIManager.GenerateUITextMeshPro("Text", reload.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(reloadText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    reloadText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    reloadText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                    reloadText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    reloadText.GetObject<TextMeshProUGUI>().text = "[USE LOCAL BROWSER]";
+
+                    Settings[2].Add(new Tab
+                    {
+                        GameObject = reload.GetObject<GameObject>(),
+                        RectTransform = reload.GetObject<RectTransform>(),
+                        Clickable = reloadClickable,
+                        Image = reload.GetObject<Image>(),
+                        Text = reloadText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(0, 1),
+                    });
+
+                    reloadClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(0, 1);
+                    };
+                    reloadClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        OpenLocalBrowser();
+                    };
+                }
+
             }
 
             // Download
@@ -951,15 +1347,12 @@ namespace ArcadiaCustoms.Functions
 
         #endregion
 
-        public Image localSearchFieldImage;
-        public InputField localSearchField;
-
         public void UpdateMiscRoundness()
         {
             if (ArcadePlugin.PageFieldRoundness.Value != 0)
-                SpriteManager.SetRoundedSprite(pageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
+                SpriteManager.SetRoundedSprite(localPageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
             else
-                pageField.image.sprite = null;
+                localPageField.image.sprite = null;
 
             if (ArcadePlugin.MiscRounded.Value)
                 SpriteManager.SetRoundedSprite(localSearchFieldImage, 1, SpriteManager.RoundedSide.Bottom);
@@ -1013,6 +1406,25 @@ namespace ArcadiaCustoms.Functions
                             StartCoroutine(RefreshLocalLevels());
                             break;
                         }
+                    case 2:
+                        {
+                            SelectionLimit[1] = 2;
+
+                            var count = SelectionLimit.Count;
+                            SelectionLimit.RemoveRange(2, count - 2);
+
+                            SelectionLimit.Add(1);
+
+                            break;
+                        }
+                    case 3:
+                        {
+                            SelectionLimit[1] = 1;
+                            var count = SelectionLimit.Count;
+                            SelectionLimit.RemoveRange(2, count - 2);
+
+                            break;
+                        }
                 }
             }
         }
@@ -1043,6 +1455,9 @@ namespace ArcadiaCustoms.Functions
 
         #region Local
 
+        public Image localSearchFieldImage;
+        public InputField localSearchField;
+
         string localSearchTerm;
         public string LocalSearchTerm
         {
@@ -1051,16 +1466,16 @@ namespace ArcadiaCustoms.Functions
             {
                 localSearchTerm = value;
                 selected = new Vector2Int(0, 2);
-                if (pageField.text != "0")
-                    pageField.text = "0";
+                if (localPageField.text != "0")
+                    localPageField.text = "0";
                 else
                     StartCoroutine(RefreshLocalLevels());
             }
         }
 
-        public int PageCount => Levels.Count();
+        public int LocalPageCount => ILocalLevels.Count() / MaxLevelsPerPage;
 
-        public IEnumerable<Level> Levels => LevelManager.Levels.Where(level => string.IsNullOrEmpty(LocalSearchTerm)
+        public IEnumerable<Level> ILocalLevels => LevelManager.Levels.Where(level => string.IsNullOrEmpty(LocalSearchTerm)
                         || level.id == LocalSearchTerm
                         || level.metadata.artist.Name.ToLower().Contains(LocalSearchTerm.ToLower())
                         || level.metadata.creator.steam_name.ToLower().Contains(LocalSearchTerm.ToLower())
@@ -1073,7 +1488,7 @@ namespace ArcadiaCustoms.Functions
             StartCoroutine(RefreshLocalLevels());
         }
 
-        public InputField pageField;
+        public InputField localPageField;
 
         Vector2 localLevelsAlignment = new Vector2(-640f, 138f);
 
@@ -1098,15 +1513,15 @@ namespace ArcadiaCustoms.Functions
 
             if (LevelManager.Levels.Count > 0)
             {
-                RTHelpers.AddEventTriggerParams(pageField.gameObject, RTHelpers.ScrollDeltaInt(pageField, max: PageCount / MaxLevelsPerPage));
+                RTHelpers.AddEventTriggerParams(localPageField.gameObject, RTHelpers.ScrollDeltaInt(localPageField, max: LocalPageCount));
             }
             else
             {
-                RTHelpers.AddEventTriggerParams(pageField.gameObject);
+                RTHelpers.AddEventTriggerParams(localPageField.gameObject);
             }
 
             int num = 0;
-            foreach (var level in Levels)
+            foreach (var level in ILocalLevels)
             {
                 if (level.id != null && level.id != "0" && num >= max - MaxLevelsPerPage && num < max)
                 {
@@ -1133,7 +1548,7 @@ namespace ArcadiaCustoms.Functions
                     var clickable = gameObject.GetComponent<Clickable>();
                     clickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
-                        if (!Cursor.visible)
+                        if (!CanSelect)
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
@@ -1143,7 +1558,7 @@ namespace ArcadiaCustoms.Functions
                     clickable.onClick = delegate (PointerEventData pointerEventData)
                     {
                         AudioManager.inst.PlaySound("blip");
-                        StartCoroutine(SelectLevel(level));
+                        StartCoroutine(SelectLocalLevel(level));
                     };
 
                     var image = gameObject.GetComponent<Image>();
@@ -1189,7 +1604,7 @@ namespace ArcadiaCustoms.Functions
                     var levelRank = LevelManager.GetLevelRank(level);
                     rank.fontSize = 64;
                     rank.text = $"<color=#{RTHelpers.ColorToHex(levelRank.color)}><b>{levelRank.name}</b></color>";
-                    
+
                     var rankShadow = gameObject.transform.Find("Rank Shadow").GetComponent<TextMeshProUGUI>();
 
                     UIManager.SetRectTransform(rankShadow.rectTransform, new Vector2(87f, 28f), ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
@@ -1206,7 +1621,7 @@ namespace ArcadiaCustoms.Functions
                     shineController.offsetOverShoot = 32f;
                     shineController.speed = 0.7f;
 
-                    LocalLevels.Add(new ArcadeLevelButton
+                    LocalLevels.Add(new LocalLevelButton
                     {
                         Position = new Vector2Int(column, row),
                         GameObject = gameObject,
@@ -1248,7 +1663,7 @@ namespace ArcadiaCustoms.Functions
             }
         }
 
-        public IEnumerator SelectLevel(Level level)
+        public IEnumerator SelectLocalLevel(Level level)
         {
             if (!level.music)
             {
@@ -1273,9 +1688,381 @@ namespace ArcadiaCustoms.Functions
 
         #endregion
 
-        public class ArcadeLevelButton
+        #region Online
+
+        public Image onlineSearchFieldImage;
+        public InputField onlineSearchField;
+
+        string onlineSearchTerm;
+        public string OnlineSearchTerm
         {
-            public ArcadeLevelButton()
+            get => onlineSearchTerm;
+            set => onlineSearchTerm = value;
+        }
+
+        public int OnlineLevelCount { get; set; }
+
+        public void SetOnlineLevelsPage(int page)
+        {
+            CurrentPage[1] = page;
+            StartCoroutine(SearchOnlineLevels());
+        }
+
+        public InputField onlinePageField;
+
+        Vector2 onlineLevelsAlignment = new Vector2(-640f, 138f);
+
+        bool loadingOnlineLevels;
+        public IEnumerator SearchOnlineLevels()
+        {
+            var page = CurrentPage[1];
+            int currentPage = CurrentPage[1] + 1;
+
+            var search = OnlineSearchTerm;
+
+            string query = string.IsNullOrEmpty(search) && page == 0 ? SearchURL : string.IsNullOrEmpty(search) && page != 0 ? $"{SearchURL}?page={page}" : !string.IsNullOrEmpty(search) && page == 0 ? $"{SearchURL}?q={ReplaceSpace(search)}" : !string.IsNullOrEmpty(search) ? $"{SearchURL}?q={ReplaceSpace(search)}&page={page}" : "";
+
+            Debug.Log($"{ArcadePlugin.className}Search query: {query}");
+
+            loadingOnlineLevels = true;
+            LSHelpers.DeleteChildren(RegularContents[1]);
+            LSHelpers.DeleteChildren(SelectedContents[1]);
+            OnlineLevels.Clear();
+
+            if (string.IsNullOrEmpty(query))
+            {
+                loadingOnlineLevels = false;
+
+                yield break;
+            }
+
+            int max = currentPage * MaxLevelsPerPage;
+
+            float top = onlineLevelsAlignment.y;
+            float left = onlineLevelsAlignment.x;
+
+            int currentRow = -1;
+
+            var count = SelectionLimit.Count;
+            SelectionLimit.RemoveRange(3, count - 3);
+
+            yield return StartCoroutine(AlephNetworkManager.DownloadJSONFile(query, delegate (string j)
+            {
+                try
+                {
+                    var jn = JSON.Parse(j);
+
+                    if (jn["items"] != null)
+                    {
+                        for (int i = 0; i < jn["items"].Count; i++)
+                        {
+                            var item = jn["items"][i];
+
+                            string id = item["id"];
+
+                            string artist = item["artist"];
+                            string title = item["title"];
+                            string creator = item["creator"];
+                            string description = item["description"];
+                            var difficulty = item["difficulty"].AsInt;
+
+                            if (id != null && id != "0")
+                            {
+                                var gameObject = localLevelPrefab.Duplicate(RegularContents[1]);
+
+                                int column = (i % MaxLevelsPerPage) % 5;
+                                int row = (int)((i % MaxLevelsPerPage) / 5);
+
+                                if (currentRow != row)
+                                {
+                                    currentRow = row;
+                                    SelectionLimit.Add(1);
+                                }
+                                else
+                                {
+                                    SelectionLimit[row + 3]++;
+                                }
+
+                                float x = left + (column * 320f);
+                                float y = top - (row * 190f);
+
+                                gameObject.transform.AsRT().anchoredPosition = new Vector2(x, y);
+
+                                var clickable = gameObject.GetComponent<Clickable>();
+
+                                var image = gameObject.GetComponent<Image>();
+                                image.color = buttonBGColor;
+
+                                var difficultyImage = gameObject.transform.Find("Difficulty").GetComponent<Image>();
+                                UIManager.SetRectTransform(difficultyImage.rectTransform, Vector2.zero, Vector2.one, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(8f, 0f));
+                                difficultyImage.color = RTHelpers.GetDifficulty(difficulty).color;
+
+                                if (ArcadePlugin.LocalLevelsRoundness.Value != 0)
+                                    SpriteManager.SetRoundedSprite(image, ArcadePlugin.LocalLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                                else
+                                    image.sprite = null;
+
+                                var titleText = gameObject.transform.Find("Title").GetComponent<TextMeshProUGUI>();
+                                UIManager.SetRectTransform(titleText.rectTransform, new Vector2(0f, -60f), ZeroFive, ZeroFive, ZeroFive, new Vector2(280f, 60f));
+
+                                titleText.fontSize = 20;
+                                titleText.fontStyle = FontStyles.Bold;
+                                titleText.enableWordWrapping = true;
+                                titleText.overflowMode = TextOverflowModes.Truncate;
+                                titleText.color = textColor;
+                                titleText.text = $"{artist} - {title}";
+
+                                var iconBase = gameObject.transform.Find("Icon Base").GetComponent<Image>();
+                                iconBase.rectTransform.anchoredPosition = new Vector2(-90f, 30f);
+
+                                if (ArcadePlugin.LocalLevelsIconRoundness.Value != 0)
+                                    SpriteManager.SetRoundedSprite(iconBase, ArcadePlugin.LocalLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                                else
+                                    iconBase.sprite = null;
+
+                                var icon = gameObject.transform.Find("Icon Base/Icon").GetComponent<Image>();
+                                icon.rectTransform.anchoredPosition = Vector2.zero;
+
+                                icon.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
+
+                                Destroy(gameObject.transform.Find("Rank").gameObject);
+                                Destroy(gameObject.transform.Find("Rank Shadow").gameObject);
+                                Destroy(gameObject.transform.Find("Shine").gameObject);
+
+                                int num = -1;
+
+                                int.TryParse(id, out num);
+
+                                if (!OnlineLevelIcons.ContainsKey(id) && num >= 0)
+                                {
+                                    StartCoroutine(AlephNetworkManager.DownloadBytes($"{CoverURL}{num}", delegate (byte[] bytes)
+                                    {
+                                        var sprite = SpriteManager.LoadSprite(bytes);
+                                        OnlineLevelIcons.Add(id, sprite);
+                                        icon.sprite = sprite;
+                                    }, delegate (string onError)
+                                    {
+                                        OnlineLevelIcons.Add(id, SteamWorkshop.inst.defaultSteamImageSprite);
+                                        icon.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
+                                    }));
+                                }
+                                else if (OnlineLevelIcons.ContainsKey(id))
+                                {
+                                    icon.sprite = OnlineLevelIcons[id];
+                                }
+                                else
+                                {
+                                    OnlineLevelIcons.Add(id, SteamWorkshop.inst.defaultSteamImageSprite);
+                                    icon.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
+                                }
+
+                                var level = new OnlineLevelButton
+                                {
+                                    ID = id,
+                                    Artist = artist,
+                                    Creator = creator,
+                                    Description = description,
+                                    Difficulty = difficulty,
+                                    Title = title,
+                                    Position = new Vector2Int(column, row),
+                                    GameObject = gameObject,
+                                    Clickable = clickable,
+                                    RectTransform = gameObject.transform.AsRT(),
+                                    BaseImage = image,
+                                    DifficultyImage = difficultyImage,
+                                    TitleText = titleText,
+                                    BaseIcon = iconBase,
+                                    Icon = icon,
+                                };
+
+                                clickable.onEnter = delegate (PointerEventData pointerEventData)
+                                {
+                                    if (!CanSelect)
+                                        return;
+
+                                    AudioManager.inst.PlaySound("LeftRight");
+                                    selected.x = column;
+                                    selected.y = row + 3;
+                                };
+                                clickable.onClick = delegate (PointerEventData pointerEventData)
+                                {
+                                    AudioManager.inst.PlaySound("blip");
+                                    SelectOnlineLevel(level);
+                                };
+
+                                OnlineLevels.Add(level);
+                            }
+                        }
+                    }
+
+                    if (jn["count"] != null)
+                    {
+                        OnlineLevelCount = jn["count"].AsInt;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogError($"{ArcadePlugin.className}{ex}");
+                }
+            }));
+
+            if (OnlineLevels.Count > 0)
+            {
+                RTHelpers.AddEventTriggerParams(onlinePageField.gameObject, RTHelpers.ScrollDeltaInt(onlinePageField, max: OnlineLevelCount));
+            }
+            else
+            {
+                RTHelpers.AddEventTriggerParams(onlinePageField.gameObject);
+            }
+
+            loadingOnlineLevels = false;
+        }
+
+        public List<OnlineLevelButton> OnlineLevels { get; set; } = new List<OnlineLevelButton>();
+
+        public Dictionary<string, Sprite> OnlineLevelIcons { get; set; } = new Dictionary<string, Sprite>();
+
+        string ReplaceSpace(string search) => search.ToLower().Replace(" ", "+");
+
+        public void SelectOnlineLevel(OnlineLevelButton onlineLevel)
+        {
+            DownloadLevelMenuManager.inst?.OpenLevel(onlineLevel);
+        }
+
+        #endregion
+
+        #region Browser
+
+        public void OpenLocalBrowser()
+        {
+            string text = FileBrowser.OpenSingleFile("Select a level to play!", RTFile.ApplicationDirectory, "lsb", "vgd");
+            if (!string.IsNullOrEmpty(text))
+            {
+                text = text.Replace("\\", "/");
+
+                if (!text.Contains("/level.lsb") && !text.Contains("/level.vgd"))
+                {
+                    Debug.LogError($"{ArcadePlugin.className}Please select an actual level{(text.Contains("/metadata.lsb") ? " and not the metadata!" : ".")}");
+                    return;
+                }
+
+                var path = text.Replace("/level.lsb", "").Replace("/level.vgd", "");
+
+                if (!RTFile.FileExists($"{path}/metadata.lsb") && !RTFile.FileExists($"{path}/metadata.vgm"))
+                {
+                    Debug.LogError($"{ArcadePlugin.className}No metadata!");
+                    return;
+                }
+
+                if (!RTFile.FileExists($"{path}/level.ogg") && !RTFile.FileExists($"{path}/level.wav") && !RTFile.FileExists($"{path}/level.mp3")
+                 && !RTFile.FileExists($"{path}/audio.ogg") && !RTFile.FileExists($"{path}/audio.wav") && !RTFile.FileExists($"{path}/audio.mp3"))
+                {
+                    Debug.LogError($"{ArcadePlugin.className}No song!");
+                    return;
+                }
+
+                MetaData metadata = RTFile.FileExists($"{path}/metadata.vgm") ? MetaData.ParseVG(JSON.Parse(RTFile.ReadFromFile($"{path}/metadata.vgm"))) : MetaData.Parse(JSON.Parse(RTFile.ReadFromFile($"{path}/metadata.lsb")));
+
+                if ((string.IsNullOrEmpty(metadata.serverID) || metadata.serverID == "-1")
+                    && (string.IsNullOrEmpty(metadata.LevelBeatmap.beatmap_id) && metadata.LevelBeatmap.beatmap_id == "-1" || metadata.LevelBeatmap.beatmap_id == "0")
+                    && (string.IsNullOrEmpty(metadata.arcadeID) || metadata.arcadeID == "-1" || metadata.arcadeID == "0"))
+                {
+                    metadata.arcadeID = LSText.randomNumString(16);
+                    var metadataJN = metadata.ToJSON();
+                    RTFile.WriteToFile($"{path}/metadata.lsb", metadataJN.ToString(3));
+                }
+
+                var level = new Level(path + "/");
+
+                StartCoroutine(SelectLocalLevel(level));
+            }
+        }
+
+        #endregion
+
+        public class OnlineLevelButton
+        {
+            public OnlineLevelButton()
+            {
+
+            }
+
+            public string ID { get; set; } = string.Empty;
+
+            public string Artist { get; set; } = string.Empty;
+            public string Title { get; set; } = string.Empty;
+            public string Creator { get; set; } = string.Empty;
+
+            public string Description { get; set; } = string.Empty;
+            public int Difficulty { get; set; }
+
+            public Vector2Int Position { get; set; }
+
+            public GameObject GameObject { get; set; }
+            public RectTransform RectTransform { get; set; }
+            public TextMeshProUGUI TitleText { get; set; }
+            public Image BaseImage { get; set; }
+            public Image BaseIcon { get; set; }
+            public Image Icon { get; set; }
+            public Image DifficultyImage { get; set; }
+
+            public Clickable Clickable { get; set; }
+
+            public AnimationManager.Animation EnterAnimation { get; set; }
+            public AnimationManager.Animation ExitAnimation { get; set; }
+
+            public bool selected;
+
+            public IEnumerator DownloadLevel()
+            {
+                var directory = $"{RTFile.ApplicationDirectory}{LevelManager.ListSlash}{ID}";
+
+                if (LevelManager.Levels.Has(x => x.id == ID) || RTFile.DirectoryExists(directory))
+                {
+                    Debug.LogError($"{ArcadePlugin.className}Level already exists! No update system in place yet.");
+
+                    yield break;
+                }
+
+                yield return inst.StartCoroutine(AlephNetworkManager.DownloadBytes($"{DownloadURL}{ID}", delegate (byte[] bytes)
+                {
+                    Directory.CreateDirectory(directory);
+
+                    File.WriteAllBytes($"{directory}.zip", bytes);
+
+                    ZipFile.ExtractToDirectory($"{directory}.zip", $"{directory}");
+
+                    File.Delete($"{directory}.zip");
+
+                    MetaData metadata = RTFile.FileExists($"{directory}/metadata.vgm") ? MetaData.ParseVG(JSON.Parse(RTFile.ReadFromFile($"{directory}/metadata.vgm"))) : MetaData.Parse(JSON.Parse(RTFile.ReadFromFile($"{directory}/metadata.lsb")));
+
+                    var level = new Level(directory + "/");
+
+                    LevelManager.Levels.Add(level);
+
+                    if (inst.CurrentTab == 0)
+                    {
+                        inst.StartCoroutine(inst.RefreshLocalLevels());
+                    }
+                    else if (inst.OpenedOnlineLevel)
+                    {
+                        DownloadLevelMenuManager.inst.Close(delegate ()
+                        {
+                            if (ArcadePlugin.OpenOnlineLevelAfterDownload.Value)
+                            {
+                                inst.StartCoroutine(inst.SelectLocalLevel(level));
+                            }
+                        });
+                    }
+                }));
+
+                yield break;
+            }
+        }
+
+        public class LocalLevelButton
+        {
+            public LocalLevelButton()
             {
 
             }
@@ -1312,6 +2099,8 @@ namespace ArcadiaCustoms.Functions
             public TextMeshProUGUI Text { get; set; }
             public Image Image { get; set; }
             public Clickable Clickable { get; set; }
+
+            public Vector2Int Position { get; set; }
         }
     }
 
