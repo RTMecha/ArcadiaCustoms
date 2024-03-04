@@ -42,6 +42,9 @@
     <Reference Include="RTFunctions">
       <HintPath>..\RTFunctions\bin\Debug\net46\RTFunctions.dll</HintPath>
     </Reference>
+    <Reference Include="System.IO.Compression">
+      <HintPath>C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.6\System.IO.Compression.dll</HintPath>
+    </Reference>
     <Reference Include="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
     <Reference Include="Unity.Postprocessing.Runtime">
       <HintPath>..\lib\Unity.Postprocessing.Runtime.dll</HintPath>
