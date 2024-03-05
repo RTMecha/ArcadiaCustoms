@@ -204,7 +204,7 @@ namespace ArcadiaCustoms.Functions
 				{
 					Debug.Log($"{ArcadePlugin.className}Selecting next Arcade level in queue [{LevelManager.current + 1} / {LevelManager.ArcadeQueue.Count}]");
 					LevelManager.CurrentLevel = LevelManager.ArcadeQueue[LevelManager.current];
-					buttons = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
+					buttons = new InterfaceController.InterfaceElement(InterfaceController.InterfaceElement.Type.Buttons, (metadata.artist.getUrl() != null) ? "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info&&[GET SONG]:getsong" : "[NEXT]:next&&[TO ARCADE]:toarcade&&[MORE INFO]:end_of_level_more_info");
 				}
 				else
 				{
