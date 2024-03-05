@@ -1109,7 +1109,7 @@ namespace ArcadiaCustoms.Functions
             Buttons[1][1].Text.text = LevelManager.ArcadeQueue.Has(x => x.id == level.id) ? "[REMOVE FROM QUEUE]" : "[ADD TO QUEUE]";
             Buttons[1][2].GameObject.SetActive(level.metadata.LevelArtist.URL != null);
 
-            FunctionsPlugin.UpdateDiscordStatus($"Selected: {level.metadata.song.title}", "In Menu", "arcade");
+            FunctionsPlugin.UpdateDiscordStatus($"Selected: {level.metadata.song.title}", "In Arcade", "arcade");
 
             var animation = new AnimationManager.Animation("Open Play Level Menu Animation");
             animation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>

@@ -302,7 +302,7 @@ namespace ArcadiaCustoms.Functions
             difficulty.text = $"<b>Difficulty</b>: <color=#{RTHelpers.ColorToHex(d.color)}>{d.name}</color>";
             description.text = level.Description;
 
-            FunctionsPlugin.UpdateDiscordStatus($"Selected Online: {level.Title}", "In Menu", "arcade");
+            FunctionsPlugin.UpdateDiscordStatus($"Selected Online: {level.Title}", "In Arcade", "arcade");
 
             var animation = new AnimationManager.Animation("Open Download Level Menu Animation");
             animation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>
