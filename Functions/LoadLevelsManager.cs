@@ -13,6 +13,7 @@ using TMPro;
 using LSFunctions;
 
 using RTFunctions.Functions.Managers;
+using RTFunctions.Functions;
 
 namespace ArcadiaCustoms.Functions
 {
@@ -33,6 +34,14 @@ namespace ArcadiaCustoms.Functions
 
         public bool cancelled = false;
 
+        public Color textColor;
+        public Color highlightColor;
+        public Color textHighlightColor;
+        public Color buttonBGColor;
+
+        public static Vector2 ZeroFive => new Vector2(0.5f, 0.5f);
+        public static Color ShadeColor => new Color(0f, 0f, 0f, 0.3f);
+
         void Awake()
         {
             inst = this;
@@ -48,13 +57,25 @@ namespace ArcadiaCustoms.Functions
             screenScale = (float)Screen.width / 1920f;
             screenScaleInverse = 1f / screenScale;
 
-            Camera.main.backgroundColor = LSColors.HexToColor(DataManager.inst.interfaceSettings["UITheme"][SaveManager.inst.settings.Video.UITheme]["values"]["bg"]);
+            var currentTheme = DataManager.inst.interfaceSettings["UITheme"][SaveManager.inst.settings.Video.UITheme];
+
+            Camera.main.backgroundColor = LSColors.HexToColor(currentTheme["values"]["bg"]);
+            textColor = currentTheme["values"]["text"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["text"]);
+            highlightColor = currentTheme["values"]["highlight"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["highlight"]);
+            textHighlightColor = currentTheme["values"]["text-highlight"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["text-highlight"]);
+            buttonBGColor = currentTheme["values"]["buttonbg"] == "transparent" ? ShadeColor : LSColors.HexToColor(currentTheme["values"]["buttonbg"]);
+
+            baseImage?.SetColor(buttonBGColor);
+            if (loadText)
+                loadText.color = textColor;
 
             if (InputDataManager.inst.menuActions.Cancel.WasPressed && !LSHelpers.IsUsingInputField())
             {
                 cancelled = true;
             }
         }
+
+        public Image baseImage;
 
         public IEnumerator CreateDialog()
         {
@@ -66,7 +87,7 @@ namespace ArcadiaCustoms.Functions
 
             textMeshPro = findButton[0].transform.GetChild(1).gameObject;
 
-            var inter = new GameObject("Interface");
+            var inter = new GameObject("Loading UI");
             inter.transform.localScale = Vector3.one * screenScale;
             menuUI = inter;
             var interfaceRT = inter.AddComponent<RectTransform>();
@@ -100,7 +121,7 @@ namespace ArcadiaCustoms.Functions
             var zeroFive = new Vector2(0.5f, 0.5f);
             LevelMenuManager.SetRectTransform(openFilePopupRT, Vector2.zero, zeroFive, zeroFive, zeroFive, new Vector2(800f, 600f));
 
-            ((Image)openFilePopup["Image"]).color = new Color(0.1f, 0.1f, 0.1f, 0.3f);
+            baseImage = ((Image)openFilePopup["Image"]);
 
             GameObject iconBase = new GameObject("icon");
             iconBase.transform.SetParent(parent);
