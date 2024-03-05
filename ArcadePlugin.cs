@@ -31,6 +31,7 @@ using RTFunctions.Functions.IO;
 using RTFunctions.Functions.Managers;
 using RTFunctions.Functions.Managers.Networking;
 using RTFunctions.Functions.Data;
+using System.Linq;
 
 namespace ArcadiaCustoms
 {
@@ -56,6 +57,8 @@ namespace ArcadiaCustoms
 
         public static ConfigEntry<string> LocalLevelsPath { get; set; }
         public static ConfigEntry<bool> OpenOnlineLevelAfterDownload { get; set; }
+        public static ConfigEntry<bool> LoadSteamLevels { get; set; }
+        public static ConfigEntry<int> ShuffleQueueAmount { get; set; }
 
         #region Sorting
 
@@ -142,6 +145,9 @@ namespace ArcadiaCustoms
             LocalLevelsPath.SettingChanged += LocalLevelsPathChanged;
 
             OpenOnlineLevelAfterDownload = Config.Bind("Arcade", "Open After Download", true, "If the Play Level Menu should open once the level has finished downloading.");
+
+            LoadSteamLevels = Config.Bind("Arcade", "Load Steam Levels After Local Loaded", true, "If subscribed Steam levels should load after the local levels have loaded.");
+            ShuffleQueueAmount = Config.Bind("Arcade", "Shuffle Queue Amount", 5, new ConfigDescription("How many levels should be added to the Queue.", new AcceptableValueRange<int>(1, 50)));
 
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
             LevelManager.Path = LocalLevelsPath.Value;
@@ -263,7 +269,7 @@ namespace ArcadiaCustoms
                 {
                     var folder = directories[i];
 
-                    if (LoadLevelsManager.inst != null && LoadLevelsManager.inst.cancelled)
+                    if (LoadLevelsManager.inst && LoadLevelsManager.inst.cancelled)
                     {
                         SceneManager.inst.LoadScene("Input Select");
                         currentlyLoading = false;
@@ -334,6 +340,20 @@ namespace ArcadiaCustoms
 
                     delay += 0.0001f;
                 }
+
+                if (LoadSteamLevels.Value)
+                {
+                    yield return inst.StartCoroutine(SteamWorkshopManager.inst.GetSubscribedItems(delegate (Level level, int i)
+                    {
+                        if (LoadLevelsManager.inst)
+                        {
+                            LoadLevelsManager.totalLevelCount = (int)SteamWorkshopManager.inst.LevelCount;
+                            LoadLevelsManager.inst.UpdateInfo(level.icon, $"Steam: Loading {Path.GetFileName(Path.GetDirectoryName(level.path))}", i);
+                        }
+                    }));
+                }
+
+                Debug.Log($"{className}Total levels: {LevelManager.Levels.Union(SteamWorkshopManager.inst.Levels).Count()}");
 
                 currentlyLoading = false;
             }
