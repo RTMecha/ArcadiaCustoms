@@ -656,6 +656,26 @@ namespace ArcadiaCustoms.Functions
                 Settings.Add(new List<ArcadeMenuManager.Tab>());
                 SettingsSelectionLimit.Add(0);
 
+                var ldm = GenerateButton(5, settings, Settings);
+                ldm.RectTransform.anchoredPosition = new Vector2(-74f, -80f);
+                ldm.RectTransform.sizeDelta = new Vector2(140f, 48f);
+                ldm.Text.alignment = TextAlignmentOptions.Center;
+                ldm.Text.fontSize = 14;
+                ldm.Text.text = $"[LDM = {FunctionsPlugin.LDM.Value}]";
+                ldm.Text.color = ArcadeMenuManager.inst.textColor;
+                ldm.Image.color = Color.Lerp(ArcadeMenuManager.inst.buttonBGColor, Color.white, 0.01f);
+                ldm.Clickable.onEnter = delegate (PointerEventData pointerEventData)
+                {
+                    if (!inSettings || !Cursor.visible)
+                        return;
+
+                    AudioManager.inst.PlaySound("LeftRight");
+                    selected.y = 5;
+                    selected.x = 0;
+                };
+
+                SettingsSelectionLimit[5]++;
+
                 var speed6 = GenerateButton(5, settings, Settings);
                 speed6.RectTransform.anchoredPosition = new Vector2(74f, -80f);
                 speed6.RectTransform.sizeDelta = new Vector2(140f, 48f);
@@ -786,6 +806,15 @@ namespace ArcadiaCustoms.Functions
                     life.Text.text = $"[1 LIFE = {PlayerManager.Is1Life}]";
                     hit.Text.text = $"[NO HIT = {PlayerManager.IsNoHit}]";
                     practice.Text.text = $"[PRACTICE = {PlayerManager.IsPractice}]";
+                };
+                ldm.Clickable.onClick = delegate (PointerEventData pointerEventData)
+                {
+                    if (!inSettings)
+                        return;
+
+                    AudioManager.inst.PlaySound("blip");
+                    FunctionsPlugin.LDM.Value = !FunctionsPlugin.LDM.Value;
+                    ldm.Text.text = $"[LDM = {FunctionsPlugin.LDM.Value}]";
                 };
 
                 speed1.Clickable.onClick = delegate (PointerEventData pointerEventData)
@@ -1155,6 +1184,11 @@ namespace ArcadiaCustoms.Functions
             {
                 AnimationManager.inst.RemoveID(animation.id);
                 animating = false;
+
+                if (ModCompatibility.sharedFunctions.ContainsKey("PageCreatorMenuMusic") && ModCompatibility.sharedFunctions.ContainsKey("PageCreatorMenuMusicFile"))
+                {
+                    AudioManager.inst.PlayMusic((string)ModCompatibility.sharedFunctions["PageCreatorMenuMusicFile"], (AudioClip)ModCompatibility.sharedFunctions["PageCreatorMenuMusic"]);
+                }
 
                 ArcadeMenuManager.inst.OpenedLocalLevel = false;
             };
