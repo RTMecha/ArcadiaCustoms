@@ -956,7 +956,7 @@ namespace ArcadiaCustoms.Functions
                     localPageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
                     localPageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
 
-                    if (ArcadePlugin.MiscRounded.Value)
+                    if (ArcadePlugin.PageFieldRoundness.Value != 0)
                         SpriteManager.SetRoundedSprite(localPageField.image, 1, SpriteManager.RoundedSide.W);
                     else
                         localPageField.image.sprite = null;
@@ -1226,10 +1226,10 @@ namespace ArcadiaCustoms.Functions
                     onlinePageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
                     onlinePageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
 
-                    if (ArcadePlugin.MiscRounded.Value)
-                        SpriteManager.SetRoundedSprite(localPageField.image, 1, SpriteManager.RoundedSide.W);
+                    if (ArcadePlugin.PageFieldRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(onlinePageField.image, 1, SpriteManager.RoundedSide.W);
                     else
-                        localPageField.image.sprite = null;
+                        onlinePageField.image.sprite = null;
 
                     var nextPage = UIManager.GenerateUIImage("Next", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(nextPage.GetObject<RectTransform>(), new Vector2(800f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
@@ -1821,7 +1821,7 @@ namespace ArcadiaCustoms.Functions
                     queuePageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
                     queuePageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
 
-                    if (ArcadePlugin.MiscRounded.Value)
+                    if (ArcadePlugin.PageFieldRoundness.Value != 0)
                         SpriteManager.SetRoundedSprite(queuePageField.image, 1, SpriteManager.RoundedSide.W);
                     else
                         queuePageField.image.sprite = null;
@@ -2061,7 +2061,7 @@ namespace ArcadiaCustoms.Functions
                     steamPageField.textComponent.color = RTHelpers.InvertColorHue(RTHelpers.InvertColorValue(textColor));
                     steamPageField.text = DataManager.inst.GetSettingInt("CurrentArcadePage", 0).ToString();
 
-                    if (ArcadePlugin.MiscRounded.Value)
+                    if (ArcadePlugin.PageFieldRoundness.Value != 0)
                         SpriteManager.SetRoundedSprite(steamPageField.image, 1, SpriteManager.RoundedSide.W);
                     else
                         steamPageField.image.sprite = null;
@@ -2207,7 +2207,7 @@ namespace ArcadiaCustoms.Functions
                 else
                     searchField.GetObject<Image>().sprite = null;
 
-                localSearchFieldImage = searchField.GetObject<Image>();
+                steamSearchFieldImage = searchField.GetObject<Image>();
 
                 searchField.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.black, 0.2f);
 
@@ -2237,14 +2237,34 @@ namespace ArcadiaCustoms.Functions
         public void UpdateMiscRoundness()
         {
             if (ArcadePlugin.PageFieldRoundness.Value != 0)
+            {
                 SpriteManager.SetRoundedSprite(localPageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
+                SpriteManager.SetRoundedSprite(onlinePageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
+                SpriteManager.SetRoundedSprite(queuePageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
+                SpriteManager.SetRoundedSprite(steamPageField.image, ArcadePlugin.PageFieldRoundness.Value, SpriteManager.RoundedSide.W);
+            }
             else
+            {
                 localPageField.image.sprite = null;
+                onlinePageField.image.sprite = null;
+                queuePageField.image.sprite = null;
+                steamPageField.image.sprite = null;
+            }
 
             if (ArcadePlugin.MiscRounded.Value)
+            {
                 SpriteManager.SetRoundedSprite(localSearchFieldImage, 1, SpriteManager.RoundedSide.Bottom);
+                SpriteManager.SetRoundedSprite(onlineSearchFieldImage, 1, SpriteManager.RoundedSide.Bottom);
+                SpriteManager.SetRoundedSprite(queueSearchFieldImage, 1, SpriteManager.RoundedSide.Bottom);
+                SpriteManager.SetRoundedSprite(steamSearchFieldImage, 1, SpriteManager.RoundedSide.Bottom);
+            }
             else
+            {
                 localSearchFieldImage.sprite = null;
+                onlineSearchFieldImage.sprite = null;
+                queueSearchFieldImage.sprite = null;
+                steamSearchFieldImage.sprite = null;
+            }
         }
 
         #region Tabs
@@ -3260,7 +3280,6 @@ namespace ArcadiaCustoms.Functions
         {
             if (steamViewType == SteamViewType.Subscribed)
             {
-                //SteamWorkshopManager.inst.LoadLevels();
                 yield return StartCoroutine(SteamWorkshopManager.inst.GetSubscribedItems());
 
                 StartCoroutine(RefreshSteamLevels());
@@ -3345,27 +3364,29 @@ namespace ArcadiaCustoms.Functions
                     UIManager.SetRectTransform(difficulty.rectTransform, Vector2.zero, Vector2.one, new Vector2(1f, 0f), new Vector2(1f, 0.5f), new Vector2(8f, 0f));
                     difficulty.color = RTHelpers.GetDifficulty(level.metadata.song.difficulty).color;
 
-                    if (ArcadePlugin.LocalLevelsRoundness.Value != 0)
-                        SpriteManager.SetRoundedSprite(image, ArcadePlugin.LocalLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                    if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(image, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
                     else
                         image.sprite = null;
 
                     var title = gameObject.transform.Find("Title").GetComponent<TextMeshProUGUI>();
-                    UIManager.SetRectTransform(title.rectTransform, new Vector2(0f, -32f), ZeroFive, ZeroFive, ZeroFive, new Vector2(280f, 32f));
+                    UIManager.SetRectTransform(title.rectTransform, new Vector2(8f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(170f, 132f));
 
-                    title.fontSize = 14;
+                    title.fontSize = 11;
                     title.fontStyle = FontStyles.Bold;
                     title.enableWordWrapping = true;
                     title.overflowMode = TextOverflowModes.Truncate;
                     title.color = textColor;
-                    title.text = $"{level.metadata.artist.Name} - {level.metadata.song.title}";
+                    title.text = $"Artist: {LSText.ClampString(level.metadata.artist.Name, 38)}\n" +
+                        $"Title: {LSText.ClampString(level.metadata.song.title, 38)}\n" +
+                        $"Creator: {LSText.ClampString(level.metadata.creator.steam_name, 38)}";
 
                     var iconBase = gameObject.transform.Find("Icon Base").GetComponent<Image>();
                     iconBase.rectTransform.anchoredPosition = new Vector2(-110f, 8f);
                     iconBase.rectTransform.sizeDelta = new Vector2(64f, 64f);
 
-                    if (ArcadePlugin.LocalLevelsIconRoundness.Value != 0)
-                        SpriteManager.SetRoundedSprite(iconBase, ArcadePlugin.LocalLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                    if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(iconBase, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
                     else
                         iconBase.sprite = null;
 
@@ -3377,19 +3398,19 @@ namespace ArcadiaCustoms.Functions
 
                     var rank = gameObject.transform.Find("Rank").GetComponent<TextMeshProUGUI>();
 
-                    UIManager.SetRectTransform(rank.rectTransform, new Vector2(90f, 20f), ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    UIManager.SetRectTransform(rank.rectTransform, new Vector2(115f, 20f), ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
                     rank.transform.localRotation = Quaternion.Euler(0f, 0f, 356f);
 
                     var levelRank = LevelManager.GetLevelRank(level);
-                    rank.fontSize = 64;
+                    rank.fontSize = 42;
                     rank.text = $"<color=#{RTHelpers.ColorToHex(levelRank.color)}><b>{levelRank.name}</b></color>";
 
                     var rankShadow = gameObject.transform.Find("Rank Shadow").GetComponent<TextMeshProUGUI>();
 
-                    UIManager.SetRectTransform(rankShadow.rectTransform, new Vector2(87f, 18f), ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    UIManager.SetRectTransform(rankShadow.rectTransform, new Vector2(112f, 18f), ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
                     rankShadow.transform.localRotation = Quaternion.Euler(0f, 0f, 356f);
 
-                    rankShadow.fontSize = 68;
+                    rankShadow.fontSize = 48;
                     rankShadow.text = $"<color=#00000035><b>{levelRank.name}</b></color>";
 
                     var shineController = gameObject.transform.Find("Shine").GetComponent<ShineController>();
@@ -3424,6 +3445,22 @@ namespace ArcadiaCustoms.Functions
 
             loadingSteamLevels = false;
             yield break;
+        }
+
+        public void UpdateSteamLevelsRoundness()
+        {
+            foreach (var level in SubscribedSteamLevels)
+            {
+                if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+                    SpriteManager.SetRoundedSprite(level.BaseImage, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                else
+                    level.BaseImage.sprite = null;
+
+                if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
+                    SpriteManager.SetRoundedSprite(level.BaseIcon, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                else
+                    level.BaseIcon.sprite = null;
+            }
         }
 
         #endregion

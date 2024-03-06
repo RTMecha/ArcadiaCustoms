@@ -50,10 +50,16 @@ namespace ArcadiaCustoms
 
         public static ConfigEntry<int> LocalLevelsRoundness { get; set; }
         public static ConfigEntry<int> LocalLevelsIconRoundness { get; set; }
+        
+        public static ConfigEntry<int> SteamLevelsRoundness { get; set; }
+        public static ConfigEntry<int> SteamLevelsIconRoundness { get; set; }
 
         public static ConfigEntry<bool> MiscRounded { get; set; }
 
         public static ConfigEntry<int> PageFieldRoundness { get; set; }
+        public static ConfigEntry<int> LoadingBackRoundness { get; set; }
+        public static ConfigEntry<int> LoadingIconRoundness { get; set; }
+        public static ConfigEntry<int> LoadingBarRoundness { get; set; }
 
         public static ConfigEntry<string> LocalLevelsPath { get; set; }
         public static ConfigEntry<bool> OpenOnlineLevelAfterDownload { get; set; }
@@ -65,6 +71,9 @@ namespace ArcadiaCustoms
 
         public static ConfigEntry<bool> LocalLevelAscend { get; set; }
         public static ConfigEntry<LevelSort> LocalLevelOrderby { get; set; }
+        
+        public static ConfigEntry<bool> SteamLevelAscend { get; set; }
+        public static ConfigEntry<LevelSort> SteamLevelOrderby { get; set; }
 
         public enum LevelSort
         {
@@ -114,10 +123,19 @@ namespace ArcadiaCustoms
             TabsRoundedness = Config.Bind("Arcade", "Tabs Roundness", 1, new ConfigDescription("How rounded the tabs at the top of the Arcade UI are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
             TabsRoundedness.SettingChanged += TabsRoundnessChanged;
 
+            LoadingBackRoundness = Config.Bind("Arcade", "Loading Back Roundness", 2, new ConfigDescription("How rounded the loading screens' back is.", new AcceptableValueRange<int>(0, 5)));
+            LoadingIconRoundness = Config.Bind("Arcade", "Loading Icon Roundness", 1, new ConfigDescription("How rounded the loading screens' icon is", new AcceptableValueRange<int>(0, 5)));
+            LoadingBarRoundness = Config.Bind("Arcade", "Loading Bar Roundness", 1, new ConfigDescription("How rounded the loading screens' loading bar is", new AcceptableValueRange<int>(0, 5)));
+
             LocalLevelsRoundness = Config.Bind("Arcade", "Local Levels Roundness", 1, new ConfigDescription("How rounded the levels are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
             LocalLevelsIconRoundness = Config.Bind("Arcade", "Local Levels Icon Roundness", 0, new ConfigDescription("How rounded the levels' icon are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
             LocalLevelsRoundness.SettingChanged += LocalLevelPanelsRoundnessChanged;
             LocalLevelsIconRoundness.SettingChanged += LocalLevelPanelsRoundnessChanged;
+            
+            SteamLevelsRoundness = Config.Bind("Arcade", "Steam Levels Roundness", 1, new ConfigDescription("How rounded the levels are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
+            SteamLevelsIconRoundness = Config.Bind("Arcade", "Steam Levels Icon Roundness", 0, new ConfigDescription("How rounded the levels' icon are. (New UI Only)", new AcceptableValueRange<int>(0, 5)));
+            SteamLevelsRoundness.SettingChanged += SteamLevelPanelsRoundnessChanged;
+            SteamLevelsIconRoundness.SettingChanged += SteamLevelPanelsRoundnessChanged;
 
             MiscRounded = Config.Bind("Arcade", "Misc Rounded", true, "If the some random elements should be rounded in the UI. (New UI Only)");
             MiscRounded.SettingChanged += MiscRoundedChanged;
@@ -141,6 +159,11 @@ namespace ArcadiaCustoms
             LocalLevelAscend = Config.Bind("Arcade Sorting", "Local Ascend", true, "If the level order should be up or down.");
             LocalLevelOrderby.SettingChanged += LocalLevelSortChanged;
             LocalLevelAscend.SettingChanged += LocalLevelSortChanged;
+
+            SteamLevelOrderby = Config.Bind("Arcade Sorting", "Steam Orderby", LevelSort.Cover, "How the level list is ordered.");
+            SteamLevelAscend = Config.Bind("Arcade Sorting", "Steam Ascend", true, "If the level order should be up or down.");
+            SteamLevelOrderby.SettingChanged += SteamLevelSortChanged;
+            SteamLevelAscend.SettingChanged += SteamLevelSortChanged;
 
             LocalLevelsPath = Config.Bind("Level", "Arcade Path in Beatmaps", "arcade", "The location of your local arcade folder.");
             LocalLevelsPath.SettingChanged += LocalLevelsPathChanged;
@@ -167,6 +190,20 @@ namespace ArcadiaCustoms
 
         #region Settings Changed
 
+        void SteamLevelSortChanged(object sender, EventArgs e)
+        {
+            SteamWorkshopManager.inst.Levels = LevelManager.SortLevels(SteamWorkshopManager.inst.Levels, (int)SteamLevelOrderby.Value, SteamLevelAscend.Value);
+
+            if (ArcadeMenuManager.inst && ArcadeMenuManager.inst.CurrentTab == 5)
+            {
+                ArcadeMenuManager.inst.selected = new Vector2Int(0, 2);
+                if (ArcadeMenuManager.inst.steamPageField.text != "0")
+                    ArcadeMenuManager.inst.steamPageField.text = "0";
+                else
+                    StartCoroutine(ArcadeMenuManager.inst.RefreshSteamLevels());
+            }
+        }
+        
         void LocalLevelSortChanged(object sender, EventArgs e)
         {
             LevelManager.Sort((int)LocalLevelOrderby.Value, LocalLevelAscend.Value);
@@ -214,6 +251,8 @@ namespace ArcadiaCustoms
         void MiscRoundedChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateMiscRoundness();
 
         void LocalLevelPanelsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateLocalLevelsRoundness();
+        
+        void SteamLevelPanelsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateSteamLevelsRoundness();
 
         void TabsRoundnessChanged(object sender, EventArgs e) => ArcadeMenuManager.inst?.UpdateTabRoundness();
 
@@ -354,6 +393,10 @@ namespace ArcadiaCustoms
                         }
                     }));
                 }
+
+                LevelManager.Sort((int)LocalLevelOrderby.Value, LocalLevelAscend.Value);
+
+                SteamWorkshopManager.inst.Levels = LevelManager.SortLevels(SteamWorkshopManager.inst.Levels, (int)SteamLevelOrderby.Value, SteamLevelAscend.Value);
 
                 Debug.Log($"{className}Total levels: {LevelManager.Levels.Union(SteamWorkshopManager.inst.Levels).Count()}");
 

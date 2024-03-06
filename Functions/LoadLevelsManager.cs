@@ -123,17 +123,43 @@ namespace ArcadiaCustoms.Functions
 
             baseImage = ((Image)openFilePopup["Image"]);
 
-            GameObject iconBase = new GameObject("icon");
+            if (ArcadePlugin.LoadingBackRoundness.Value != 0)
+                SpriteManager.SetRoundedSprite(baseImage, ArcadePlugin.LoadingBackRoundness.Value, SpriteManager.RoundedSide.W);
+            else
+                baseImage.sprite = null;
+
+            var iconBase = new GameObject("icon base");
             iconBase.transform.SetParent(parent);
             iconBase.transform.SetAsFirstSibling();
             iconBase.transform.localScale = Vector3.one;
             iconBase.layer = 5;
-            RectTransform iconBaseRT = iconBase.AddComponent<RectTransform>();
-            iconBase.AddComponent<CanvasRenderer>();
-            loadImage = iconBase.AddComponent<Image>();
 
+            var iconBaseRT = iconBase.AddComponent<RectTransform>();
             iconBaseRT.anchoredPosition = new Vector2(0f, 130f);
             iconBaseRT.sizeDelta = new Vector2(256f, 256f);
+
+            iconBase.AddComponent<CanvasRenderer>();
+            var iconBaseImage = iconBase.AddComponent<Image>();
+
+            var loadMask = iconBase.AddComponent<Mask>();
+            loadMask.showMaskGraphic = false;
+
+            if (ArcadePlugin.LoadingIconRoundness.Value != 0)
+                SpriteManager.SetRoundedSprite(iconBaseImage, ArcadePlugin.LoadingIconRoundness.Value, SpriteManager.RoundedSide.W);
+            else
+                iconBaseImage.sprite = null;
+
+            var icon = new GameObject("icon");
+            icon.transform.SetParent(iconBaseRT);
+            icon.transform.localScale = Vector3.one;
+            icon.layer = 5;
+
+            var iconRT = icon.AddComponent<RectTransform>();
+            icon.AddComponent<CanvasRenderer>();
+            loadImage = icon.AddComponent<Image>();
+
+            iconRT.anchoredPosition = new Vector2(0f, 0f);
+            iconRT.sizeDelta = new Vector2(256f, 256f);
 
             loadImage.sprite = SteamWorkshop.inst.defaultSteamImageSprite;
 
@@ -148,6 +174,12 @@ namespace ArcadiaCustoms.Functions
             var loaderBase = LevelMenuManager.GenerateUIImage("LoaderBase", parent);
             LevelMenuManager.SetRectTransform((RectTransform)loaderBase["RectTransform"], new Vector2(-300f, -140f), zeroFive, zeroFive, new Vector2(0f, 0.5f), new Vector2(600f, 32f));
             ((GameObject)loaderBase["GameObject"]).transform.localScale = Vector3.one;
+            ((GameObject)loaderBase["GameObject"]).AddComponent<Mask>();
+
+            if (ArcadePlugin.LoadingBarRoundness.Value != 0)
+                SpriteManager.SetRoundedSprite(((Image)loaderBase["Image"]), ArcadePlugin.LoadingBarRoundness.Value, SpriteManager.RoundedSide.W);
+            else
+                ((Image)loaderBase["Image"]).sprite = null;
 
             var loader = LevelMenuManager.GenerateUIImage("Loader", ((GameObject)loaderBase["GameObject"]).transform);
             loadingBar = (RectTransform)loader["RectTransform"];
