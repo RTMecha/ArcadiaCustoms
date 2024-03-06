@@ -59,6 +59,7 @@ namespace ArcadiaCustoms
         public static ConfigEntry<bool> OpenOnlineLevelAfterDownload { get; set; }
         public static ConfigEntry<bool> LoadSteamLevels { get; set; }
         public static ConfigEntry<int> ShuffleQueueAmount { get; set; }
+        public static ConfigEntry<bool> QueuePlaysLevel { get; set; }
 
         #region Sorting
 
@@ -147,6 +148,7 @@ namespace ArcadiaCustoms
             OpenOnlineLevelAfterDownload = Config.Bind("Arcade", "Open After Download", true, "If the Play Level Menu should open once the level has finished downloading.");
 
             LoadSteamLevels = Config.Bind("Arcade", "Load Steam Levels After Local Loaded", true, "If subscribed Steam levels should load after the local levels have loaded.");
+            QueuePlaysLevel = Config.Bind("Arcade", "Play First Queued", false, "If enabled, the game will immediately load into the first queued level, otherwise it will open it in the Play Level Menu.");
             ShuffleQueueAmount = Config.Bind("Arcade", "Shuffle Queue Amount", 5, new ConfigDescription("How many levels should be added to the Queue.", new AcceptableValueRange<int>(1, 50)));
 
             LevelManager.CurrentLevelMode = CurrentLevelMode.Value;
