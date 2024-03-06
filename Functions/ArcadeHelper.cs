@@ -199,8 +199,8 @@ namespace ArcadiaCustoms.Functions
 				ic.interfaceBranches[endOfLevelIndex].elements[2] = levelSummary;
 
 				InterfaceController.InterfaceElement buttons = null;
-
-				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current++ < LevelManager.ArcadeQueue.Count)
+				LevelManager.current += 1;
+				if (LevelManager.ArcadeQueue.Count > 1 && LevelManager.current < LevelManager.ArcadeQueue.Count)
 				{
 					Debug.Log($"{ArcadePlugin.className}Selecting next Arcade level in queue [{LevelManager.current + 1} / {LevelManager.ArcadeQueue.Count}]");
 					LevelManager.CurrentLevel = LevelManager.ArcadeQueue[LevelManager.current];
