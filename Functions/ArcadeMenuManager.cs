@@ -695,6 +695,11 @@ namespace ArcadiaCustoms.Functions
             yield return StartCoroutine(DeleteComponents());
             UpdateTheme();
 
+            if (ModCompatibility.sharedFunctions.ContainsKey("PageCreatorMenuMusic") && ModCompatibility.sharedFunctions.ContainsKey("PageCreatorMenuMusicFile"))
+            {
+                AudioManager.inst.PlayMusic((string)ModCompatibility.sharedFunctions["PageCreatorMenuMusicFile"], (AudioClip)ModCompatibility.sharedFunctions["PageCreatorMenuMusic"]);
+            }
+
             LevelManager.current = 0;
 
             #region Interface Setup
@@ -1707,9 +1712,16 @@ namespace ArcadiaCustoms.Functions
                         }
 
                         AudioManager.inst.PlaySound("blip");
-                        menuUI.SetActive(false);
-                        LevelManager.OnLevelEnd = ArcadeHelper.EndOfLevel;
-                        ArcadePlugin.inst.StartCoroutine(LevelManager.Play(LevelManager.ArcadeQueue[0]));
+                        if (ArcadePlugin.QueuePlaysLevel.Value)
+                        {
+                            menuUI.SetActive(false);
+                            LevelManager.OnLevelEnd = ArcadeHelper.EndOfLevel;
+                            ArcadePlugin.inst.StartCoroutine(LevelManager.Play(LevelManager.ArcadeQueue[0]));
+                        }
+                        else
+                        {
+                            StartCoroutine(SelectLocalLevel(LevelManager.ArcadeQueue[0]));
+                        }
                     };
 
                     Settings[4].Add(new Tab
@@ -2310,7 +2322,7 @@ namespace ArcadiaCustoms.Functions
                         }
                     case 5:
                         {
-                            SelectionLimit[1] = 4;
+                            SelectionLimit[1] = 6;
 
                             StartCoroutine(RefreshQueuedLevels());
 
