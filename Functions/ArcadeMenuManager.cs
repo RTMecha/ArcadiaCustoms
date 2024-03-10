@@ -536,6 +536,82 @@ namespace ArcadiaCustoms.Functions
                                 level.Clickable?.onClick?.Invoke(null);
                             }
                         }
+
+                    if (steamViewType == SteamViewType.Online)
+                        foreach (var level in OnlineSteamLevels)
+                        {
+                            if (loadingSteamLevels)
+                                break;
+
+                            var isSelected = selected.x == level.Position.x && selected.y - 2 == level.Position.y;
+
+                            level.TitleText.color = isSelected ? textHighlightColor : textColor;
+                            level.BaseImage.color = isSelected ? highlightColor : buttonBGColor;
+
+                            if (level.selected != isSelected)
+                            {
+                                level.selected = isSelected;
+                                if (level.selected)
+                                {
+                                    if (level.ExitAnimation != null)
+                                    {
+                                        AnimationManager.inst.RemoveID(level.ExitAnimation.id);
+                                    }
+
+                                    level.EnterAnimation = new AnimationManager.Animation("Enter Animation");
+                                    level.EnterAnimation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>
+                                    {
+                                        new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
+                                        {
+                                            new FloatKeyframe(0f, 1f, Ease.Linear),
+                                            new FloatKeyframe(0.3f, 1.1f, Ease.CircOut),
+                                            new FloatKeyframe(0.31f, 1.1f, Ease.Linear),
+                                        }, delegate (float x)
+                                        {
+                                            if (level.RectTransform != null)
+                                                level.RectTransform.localScale = new Vector3(x, x, 1f);
+                                        }),
+                                    };
+                                    level.EnterAnimation.onComplete = delegate ()
+                                    {
+                                        AnimationManager.inst.RemoveID(level.EnterAnimation.id);
+                                    };
+                                    AnimationManager.inst.Play(level.EnterAnimation);
+                                }
+                                else
+                                {
+                                    if (level.EnterAnimation != null)
+                                    {
+                                        AnimationManager.inst.RemoveID(level.EnterAnimation.id);
+                                    }
+
+                                    level.ExitAnimation = new AnimationManager.Animation("Exit Animation");
+                                    level.ExitAnimation.floatAnimations = new List<AnimationManager.Animation.AnimationObject<float>>
+                                    {
+                                        new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
+                                        {
+                                            new FloatKeyframe(0f, 1.1f, Ease.Linear),
+                                            new FloatKeyframe(0.3f, 1f, Ease.BounceOut),
+                                            new FloatKeyframe(0.31f, 1f, Ease.Linear),
+                                        }, delegate (float x)
+                                        {
+                                            if (level.RectTransform != null)
+                                                level.RectTransform.localScale = new Vector3(x, x, 1f);
+                                        }),
+                                    };
+                                    level.ExitAnimation.onComplete = delegate ()
+                                    {
+                                        AnimationManager.inst.RemoveID(level.ExitAnimation.id);
+                                    };
+                                    AnimationManager.inst.Play(level.ExitAnimation);
+                                }
+                            }
+
+                            if (isSelected && !LSHelpers.IsUsingInputField() && InputDataManager.inst.menuActions.Submit.WasPressed)
+                            {
+                                level.Clickable?.onClick?.Invoke(null);
+                            }
+                        }
                 }
             }
             catch
@@ -770,6 +846,22 @@ namespace ArcadiaCustoms.Functions
             downloadLevelMenu.background = downloadLevelMenuImage;
 
             StartCoroutine(downloadLevelMenu.SetupDownloadLevelMenu());
+            
+            var steamLevelMenuBase = new GameObject("Steam Level Menu");
+            steamLevelMenuBase.transform.SetParent(inter.transform);
+            steamLevelMenuBase.transform.localScale = Vector3.one;
+
+            var steamLevelMenuBaseRT = steamLevelMenuBase.AddComponent<RectTransform>();
+            steamLevelMenuBaseRT.anchoredPosition = new Vector2(0f, -1080f);
+            steamLevelMenuBaseRT.sizeDelta = new Vector2(1920f, 1080f);
+
+            var steamLevelMenuImage = steamLevelMenuBase.AddComponent<Image>();
+
+            var steamLevelMenu = steamLevelMenuBase.AddComponent<SteamLevelMenuManager>();
+            steamLevelMenu.rectTransform = steamLevelMenuBaseRT;
+            steamLevelMenu.background = steamLevelMenuImage;
+
+            StartCoroutine(steamLevelMenu.SetupSteamLevelMenu());
 
             #endregion
 
@@ -1989,7 +2081,7 @@ namespace ArcadiaCustoms.Functions
 
                     localSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
 
-                    var reload = UIManager.GenerateUIImage("Subscribed", localSettingsBar.GetObject<RectTransform>());
+                    var reload = UIManager.GenerateUIImage("Reload", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(-600f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
 
                     var reloadClickable = reload.GetObject<GameObject>().AddComponent<Clickable>();
@@ -2018,6 +2110,35 @@ namespace ArcadiaCustoms.Functions
                         Position = new Vector2Int(0, 1),
                     });
                     
+                    var viewType = UIManager.GenerateUIImage("View Type", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(viewType.GetObject<RectTransform>(), new Vector2(-350f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(230f, 64f));
+
+                    var viewTypeClickable = viewType.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    viewType.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(viewType.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        viewType.GetObject<Image>().sprite = null;
+
+                    var viewTypeText = UIManager.GenerateUITextMeshPro("Text", viewType.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(viewTypeText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    viewTypeText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    viewTypeText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                    viewTypeText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    viewTypeText.GetObject<TextMeshProUGUI>().text = "[SUBSCRIBED]";
+
+                    Settings[5].Add(new Tab
+                    {
+                        GameObject = viewType.GetObject<GameObject>(),
+                        RectTransform = viewType.GetObject<RectTransform>(),
+                        Clickable = viewTypeClickable,
+                        Image = viewType.GetObject<Image>(),
+                        Text = viewTypeText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(1, 1),
+                    });
+                    
                     var prevPage = UIManager.GenerateUIImage("Previous", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(prevPage.GetObject<RectTransform>(), new Vector2(500f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
 
@@ -2044,7 +2165,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = prevPageClickable,
                         Image = prevPage.GetObject<Image>(),
                         Text = prevPageText.GetObject<TextMeshProUGUI>(),
-                        Position = new Vector2Int(1, 1),
+                        Position = new Vector2Int(2, 1),
                     });
 
                     var pageField = UIManager.GenerateUIInputField("Page", localSettingsBar.GetObject<RectTransform>());
@@ -2092,7 +2213,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = nextPageClickable,
                         Image = nextPage.GetObject<Image>(),
                         Text = nextPageText.GetObject<TextMeshProUGUI>(),
-                        Position = new Vector2Int(2, 1),
+                        Position = new Vector2Int(3, 1),
                     });
 
                     steamPageField.onValueChanged.AddListener(delegate (string _val)
@@ -2120,6 +2241,26 @@ namespace ArcadiaCustoms.Functions
                         steamViewType = SteamViewType.Subscribed;
                         StartCoroutine(SetSteamSearch());
                     };
+                    
+                    viewTypeClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(1, 1);
+                    };
+                    viewTypeClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        AudioManager.inst.PlaySound("blip");
+                        steamViewType = steamViewType == SteamViewType.Online ? SteamViewType.Subscribed : SteamViewType.Online;
+                        if (steamViewType == SteamViewType.Online)
+                            StartCoroutine(SetSteamSearch());
+                        else
+                            StartCoroutine(RefreshSubscribedSteamLevels());
+
+                        viewTypeText.GetObject<TextMeshProUGUI>().text = $"[{(steamViewType == SteamViewType.Online ? "ONLINE" : "SUBSCRIBED")}]";
+                    };
 
                     prevPageClickable.onEnter = delegate (PointerEventData pointerEventData)
                     {
@@ -2127,7 +2268,7 @@ namespace ArcadiaCustoms.Functions
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
-                        selected = new Vector2Int(1, 1);
+                        selected = new Vector2Int(2, 1);
                     };
                     prevPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
@@ -2136,7 +2277,7 @@ namespace ArcadiaCustoms.Functions
                             if (p > 0)
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                steamPageField.text = Mathf.Clamp(p - 1, 0, SteamPageCount).ToString();
+                                steamPageField.text = Mathf.Clamp(p - 1, 0, steamViewType == SteamViewType.Online ? int.MaxValue : SteamPageCount).ToString();
                             }
                             else
                             {
@@ -2151,16 +2292,16 @@ namespace ArcadiaCustoms.Functions
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
-                        selected = new Vector2Int(2, 1);
+                        selected = new Vector2Int(3, 1);
                     };
                     nextPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
                         if (int.TryParse(steamPageField.text, out int p))
                         {
-                            if (p < SteamPageCount)
+                            if (p < (steamViewType == SteamViewType.Online ? int.MaxValue : SteamPageCount))
                             {
                                 AudioManager.inst.PlaySound("blip");
-                                steamPageField.text = Mathf.Clamp(p + 1, 0, SteamPageCount).ToString();
+                                steamPageField.text = Mathf.Clamp(p + 1, 0, steamViewType == SteamViewType.Online ? int.MaxValue : SteamPageCount).ToString();
                             }
                             else
                             {
@@ -2353,7 +2494,7 @@ namespace ArcadiaCustoms.Functions
                             SelectionLimit[1] = 3;
 
                             if (steamViewType == SteamViewType.Subscribed)
-                                StartCoroutine(SteamWorkshopManager.inst.hasLoaded ? RefreshSteamLevels() : SetSteamSearch());
+                                StartCoroutine(SteamWorkshopManager.inst.hasLoaded ? RefreshSubscribedSteamLevels() : SetSteamSearch());
 
                             break;
                         }
@@ -2411,6 +2552,7 @@ namespace ArcadiaCustoms.Functions
 
         public IEnumerable<Level> ILocalLevels => LevelManager.Levels.Where(level => string.IsNullOrEmpty(LocalSearchTerm)
                         || level.id == LocalSearchTerm
+                        || level.metadata.LevelSong.tags.Contains(LocalSearchTerm)
                         || level.metadata.artist.Name.ToLower().Contains(LocalSearchTerm.ToLower())
                         || level.metadata.creator.steam_name.ToLower().Contains(LocalSearchTerm.ToLower())
                         || level.metadata.song.title.ToLower().Contains(LocalSearchTerm.ToLower())
@@ -2654,7 +2796,8 @@ namespace ArcadiaCustoms.Functions
         bool loadingOnlineLevels;
         public IEnumerator SearchOnlineLevels()
         {
-            yield break;
+            if (string.IsNullOrEmpty(BaseURL))
+                yield break;
 
             var page = CurrentPage[1];
             int currentPage = CurrentPage[1] + 1;
@@ -3238,6 +3381,7 @@ namespace ArcadiaCustoms.Functions
         }
 
         public List<LocalLevelButton> SubscribedSteamLevels { get; set; } = new List<LocalLevelButton>();
+        public List<SteamLevelButton> OnlineSteamLevels { get; set; } = new List<SteamLevelButton>();
 
         public Image steamSearchFieldImage;
         public InputField steamSearchField;
@@ -3250,10 +3394,24 @@ namespace ArcadiaCustoms.Functions
             {
                 steamSearchTerm = value;
                 selected = new Vector2Int(0, 2);
+
                 if (steamPageField.text != "0")
+                {
                     steamPageField.text = "0";
-                else
-                    StartCoroutine(RefreshSteamLevels());
+                    return;
+                }
+
+                if (steamViewType == SteamViewType.Subscribed)
+                    StartCoroutine(RefreshSubscribedSteamLevels());
+                if (steamViewType == SteamViewType.Online)
+                {
+                    SearchSteam();
+
+                    //StartCoroutine(SteamWorkshopManager.inst.Search(SteamSearchTerm, CurrentPage[5] + 1, delegate ()
+                    //{
+                    //    StartCoroutine(RefreshOnlineSteamLevels());
+                    //}));
+                }
             }
         }
 
@@ -3269,7 +3427,17 @@ namespace ArcadiaCustoms.Functions
         public void SetSteamLevelsPage(int page)
         {
             CurrentPage[5] = page;
-            StartCoroutine(RefreshSteamLevels());
+            if (steamViewType == SteamViewType.Subscribed)
+                StartCoroutine(RefreshSubscribedSteamLevels());
+            if (steamViewType == SteamViewType.Online)
+            {
+                SearchSteam();
+
+                //StartCoroutine(SteamWorkshopManager.inst.Search(SteamSearchTerm, CurrentPage[5] + 1, delegate ()
+                //{
+                //    StartCoroutine(RefreshOnlineSteamLevels());
+                //}));
+            }
         }
 
         public InputField steamPageField;
@@ -3280,16 +3448,41 @@ namespace ArcadiaCustoms.Functions
         {
             if (steamViewType == SteamViewType.Subscribed)
             {
+                LSHelpers.DeleteChildren(RegularContents[5]);
                 yield return StartCoroutine(SteamWorkshopManager.inst.GetSubscribedItems());
 
-                StartCoroutine(RefreshSteamLevels());
+                SteamWorkshopManager.inst.Levels = LevelManager.SortLevels(SteamWorkshopManager.inst.Levels, (int)ArcadePlugin.SteamLevelOrderby.Value, ArcadePlugin.SteamLevelAscend.Value);
+
+                StartCoroutine(RefreshSubscribedSteamLevels());
             }
+
+            if (steamViewType == SteamViewType.Online)
+            {
+                SearchSteam();
+
+                //StartCoroutine(SteamWorkshopManager.inst.Search(SteamSearchTerm, CurrentPage[5] + 1, delegate ()
+                //{
+                //    StartCoroutine(RefreshOnlineSteamLevels());
+                //}));
+            }
+        }
+
+        public void SearchSteam()
+        {
+            StartCoroutine(RefreshOnlineSteamLevels());
+        }
+
+        public async void SearchSteamAsync()
+        {
+            await SteamWorkshopManager.inst.SearchAsync(SteamSearchTerm, CurrentPage[5] + 1);
+            await SteamWorkshopManager.inst.SearchAsync(SteamSearchTerm, CurrentPage[5] + 1);
+            StartCoroutine(RefreshOnlineSteamLevels());
         }
 
         public static int MaxSteamLevelsPerPage => 35;
 
         bool loadingSteamLevels;
-        public IEnumerator RefreshSteamLevels()
+        public IEnumerator RefreshSubscribedSteamLevels()
         {
             loadingSteamLevels = true;
             LSHelpers.DeleteChildren(RegularContents[5]);
@@ -3447,20 +3640,330 @@ namespace ArcadiaCustoms.Functions
             yield break;
         }
 
-        public void UpdateSteamLevelsRoundness()
+        public IEnumerator RefreshOnlineSteamLevels()
         {
-            foreach (var level in SubscribedSteamLevels)
+            loadingSteamLevels = true;
+            LSHelpers.DeleteChildren(RegularContents[5]);
+            OnlineSteamLevels.Clear();
+            int currentPage = CurrentPage[5] + 1;
+
+            int max = currentPage * MaxSteamLevelsPerPage;
+
+            float top = steamLevelsAlignment.y + 20f;
+            float left = steamLevelsAlignment.x;
+
+            int currentRow = -1;
+
+            var count = SelectionLimit.Count;
+            SelectionLimit.RemoveRange(2, count - 2);
+
+            RTHelpers.AddEventTriggerParams(steamPageField.gameObject, RTHelpers.ScrollDeltaInt(steamPageField, max: int.MaxValue));
+
+            var searchTerm = SteamSearchTerm;
+
+            yield return new WaitUntil(() => SteamWorkshopManager.inst.SearchAsync(SteamSearchTerm, CurrentPage[5] + 1, delegate (SteamworksFacepunch.Ugc.Item item, int num)
             {
-                if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
-                    SpriteManager.SetRoundedSprite(level.BaseImage, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                if (searchTerm != SteamSearchTerm || currentPage != CurrentPage[5] + 1)
+                {
+                    return;
+                }
+
+                var gameObject = localLevelPrefab.Duplicate(RegularContents[5]);
+
+                int column = (num) % 5;
+                int row = (int)((num) / 5);
+
+                if (currentRow != row)
+                {
+                    currentRow = row;
+                    SelectionLimit.Add(1);
+                }
                 else
-                    level.BaseImage.sprite = null;
+                {
+                    SelectionLimit[row + 2]++;
+                }
+
+                float x = left + (column * 320f);
+                float y = top - (row * 70f);
+
+                gameObject.transform.AsRT().anchoredPosition = new Vector2(x, y);
+                gameObject.transform.AsRT().sizeDelta = new Vector2(300f, 64f);
+
+                var clickable = gameObject.GetComponent<Clickable>();
+                clickable.onEnter = delegate (PointerEventData pointerEventData)
+                {
+                    if (!CanSelect)
+                        return;
+
+                    AudioManager.inst.PlaySound("LeftRight");
+                    selected.x = column;
+                    selected.y = row + 2;
+                };
+
+                var image = gameObject.GetComponent<Image>();
+                image.color = buttonBGColor;
+
+                Destroy(gameObject.transform.Find("Difficulty").gameObject);
+
+                if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+                    SpriteManager.SetRoundedSprite(image, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                else
+                    image.sprite = null;
+
+                var title = gameObject.transform.Find("Title").GetComponent<TextMeshProUGUI>();
+                UIManager.SetRectTransform(title.rectTransform, new Vector2(8f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(170f, 132f));
+
+                title.fontSize = 11;
+                title.fontStyle = FontStyles.Bold;
+                title.enableWordWrapping = true;
+                title.overflowMode = TextOverflowModes.Truncate;
+                title.color = textColor;
+                title.text = $"Title: {LSText.ClampString(item.Title, 38)}\n" +
+                    $"Creator: {LSText.ClampString(item.Owner.Name, 38)}\n" +
+                    $"Subscribed: {(item.IsSubscribed ? "Yes" : "No")}";
+
+                var iconBase = gameObject.transform.Find("Icon Base").GetComponent<Image>();
+                iconBase.rectTransform.anchoredPosition = new Vector2(-110f, 0f);
+                iconBase.rectTransform.sizeDelta = new Vector2(48f, 48f);
 
                 if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
-                    SpriteManager.SetRoundedSprite(level.BaseIcon, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                    SpriteManager.SetRoundedSprite(iconBase, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
                 else
-                    level.BaseIcon.sprite = null;
-            }
+                    iconBase.sprite = null;
+
+                var icon = gameObject.transform.Find("Icon Base/Icon").GetComponent<Image>();
+                icon.rectTransform.anchoredPosition = Vector2.zero;
+                icon.rectTransform.sizeDelta = new Vector2(48f, 48f);
+
+                if (!steamPreviews.ContainsKey(item.Id))
+                {
+                    StartCoroutine(AlephNetworkManager.DownloadBytes(item.PreviewImageUrl, delegate (byte[] bytes)
+                    {
+                        var sprite = SpriteManager.LoadSprite(bytes);
+
+                        if (!steamPreviews.ContainsKey(item.Id))
+                            steamPreviews.Add(item.Id, sprite);
+
+                        try
+                        {
+                            icon.sprite = sprite;
+                        }
+                        catch
+                        {
+
+                        }
+                    }, delegate (string onError)
+                    {
+                        var sprite = SteamWorkshop.inst.defaultSteamImageSprite;
+
+                        if (!steamPreviews.ContainsKey(item.Id))
+                            steamPreviews.Add(item.Id, sprite);
+
+                        icon.sprite = sprite;
+                    }));
+                }
+                else
+                {
+                    icon.sprite = steamPreviews[item.Id];
+                }
+
+                Destroy(gameObject.transform.Find("Rank").gameObject);
+                Destroy(gameObject.transform.Find("Rank Shadow").gameObject);
+                Destroy(gameObject.transform.Find("Shine").gameObject);
+
+                var button = new SteamLevelButton
+                {
+                    Position = new Vector2Int(column, row),
+                    Title = item.Title,
+                    Description = item.Description,
+                    Creator = item.Owner.Name,
+                    GameObject = gameObject,
+                    Clickable = clickable,
+                    RectTransform = gameObject.transform.AsRT(),
+                    BaseImage = image,
+                    TitleText = title,
+                    BaseIcon = iconBase,
+                    Icon = icon,
+                    Item = item,
+                };
+
+                clickable.onClick = delegate (PointerEventData pointerEventData)
+                {
+                    AudioManager.inst.PlaySound("blip");
+                    SteamLevelMenuManager.inst?.OpenLevel(button);
+                };
+
+                OnlineSteamLevels.Add(button);
+            }).IsCompleted);
+
+            //int num = 0;
+            //foreach (var level in SteamWorkshopManager.inst.SearchItems)
+            //{
+            //    var gameObject = localLevelPrefab.Duplicate(RegularContents[5]);
+
+            //    int column = (num) % 5;
+            //    int row = (int)((num) / 5);
+
+            //    if (currentRow != row)
+            //    {
+            //        currentRow = row;
+            //        SelectionLimit.Add(1);
+            //    }
+            //    else
+            //    {
+            //        SelectionLimit[row + 2]++;
+            //    }
+
+            //    float x = left + (column * 320f);
+            //    float y = top - (row * 110f);
+
+            //    gameObject.transform.AsRT().anchoredPosition = new Vector2(x, y);
+            //    gameObject.transform.AsRT().sizeDelta = new Vector2(300f, 94f);
+
+            //    var clickable = gameObject.GetComponent<Clickable>();
+            //    clickable.onEnter = delegate (PointerEventData pointerEventData)
+            //    {
+            //        if (!CanSelect)
+            //            return;
+
+            //        AudioManager.inst.PlaySound("LeftRight");
+            //        selected.x = column;
+            //        selected.y = row + 2;
+            //    };
+
+            //    var image = gameObject.GetComponent<Image>();
+            //    image.color = buttonBGColor;
+
+            //    Destroy(gameObject.transform.Find("Difficulty").gameObject);
+
+            //    if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+            //        SpriteManager.SetRoundedSprite(image, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+            //    else
+            //        image.sprite = null;
+
+            //    var title = gameObject.transform.Find("Title").GetComponent<TextMeshProUGUI>();
+            //    UIManager.SetRectTransform(title.rectTransform, new Vector2(8f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(170f, 132f));
+
+            //    title.fontSize = 11;
+            //    title.fontStyle = FontStyles.Bold;
+            //    title.enableWordWrapping = true;
+            //    title.overflowMode = TextOverflowModes.Truncate;
+            //    title.color = textColor;
+            //    title.text = $"Title: {LSText.ClampString(level.Title, 38)}\n" +
+            //        $"Creator: {LSText.ClampString(level.Owner.Name, 38)}\n" +
+            //        $"Subscribed: {(level.IsSubscribed ? "Yes" : "No")}";
+
+            //    var iconBase = gameObject.transform.Find("Icon Base").GetComponent<Image>();
+            //    iconBase.rectTransform.anchoredPosition = new Vector2(-110f, 8f);
+            //    iconBase.rectTransform.sizeDelta = new Vector2(64f, 64f);
+
+            //    if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
+            //        SpriteManager.SetRoundedSprite(iconBase, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+            //    else
+            //        iconBase.sprite = null;
+
+            //    var icon = gameObject.transform.Find("Icon Base/Icon").GetComponent<Image>();
+            //    icon.rectTransform.anchoredPosition = Vector2.zero;
+            //    icon.rectTransform.sizeDelta = new Vector2(64f, 64f);
+
+            //    if (!steamPreviews.ContainsKey(level.Id))
+            //    {
+            //        StartCoroutine(AlephNetworkManager.DownloadBytes(level.PreviewImageUrl, delegate (byte[] bytes)
+            //        {
+            //            var sprite = SpriteManager.LoadSprite(bytes);
+
+            //            if (!steamPreviews.ContainsKey(level.Id))
+            //                steamPreviews.Add(level.Id, sprite);
+
+            //            try
+            //            {
+            //                icon.sprite = sprite;
+            //            }
+            //            catch
+            //            {
+
+            //            }
+            //        }, delegate (string onError)
+            //        {
+            //            var sprite = SteamWorkshop.inst.defaultSteamImageSprite;
+
+            //            if (!steamPreviews.ContainsKey(level.Id))
+            //                steamPreviews.Add(level.Id, sprite);
+
+            //            icon.sprite = sprite;
+            //        }));
+            //    }
+            //    else
+            //    {
+            //        icon.sprite = steamPreviews[level.Id];
+            //    }
+
+            //    Destroy(gameObject.transform.Find("Rank").gameObject);
+            //    Destroy(gameObject.transform.Find("Rank Shadow").gameObject);
+            //    Destroy(gameObject.transform.Find("Shine").gameObject);
+
+            //    var button = new SteamLevelButton
+            //    {
+            //        Position = new Vector2Int(column, row),
+            //        Title = level.Title,
+            //        Description = level.Description,
+            //        Creator = level.Owner.Name,
+            //        GameObject = gameObject,
+            //        Clickable = clickable,
+            //        RectTransform = gameObject.transform.AsRT(),
+            //        BaseImage = image,
+            //        TitleText = title,
+            //        BaseIcon = iconBase,
+            //        Icon = icon,
+            //        Item = level,
+            //    };
+
+            //    clickable.onClick = delegate (PointerEventData pointerEventData)
+            //    {
+            //        AudioManager.inst.PlaySound("blip");
+            //        SteamLevelMenuManager.inst?.OpenLevel(button);
+            //    };
+
+            //    OnlineSteamLevels.Add(button);
+
+            //    num++;
+            //}
+
+            loadingSteamLevels = false;
+            yield break;
+        }
+
+        public Dictionary<SteamworksFacepunch.Data.PublishedFileId, Sprite> steamPreviews = new Dictionary<SteamworksFacepunch.Data.PublishedFileId, Sprite>();
+
+        public void UpdateSteamLevelsRoundness()
+        {
+            if (steamViewType == SteamViewType.Subscribed)
+                foreach (var level in SubscribedSteamLevels)
+                {
+                    if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(level.BaseImage, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        level.BaseImage.sprite = null;
+
+                    if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(level.BaseIcon, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        level.BaseIcon.sprite = null;
+                }
+
+            if (steamViewType == SteamViewType.Online)
+                foreach (var level in OnlineSteamLevels)
+                {
+                    if (ArcadePlugin.SteamLevelsRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(level.BaseImage, ArcadePlugin.SteamLevelsRoundness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        level.BaseImage.sprite = null;
+
+                    if (ArcadePlugin.SteamLevelsIconRoundness.Value != 0)
+                        SpriteManager.SetRoundedSprite(level.BaseIcon, ArcadePlugin.SteamLevelsIconRoundness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        level.BaseIcon.sprite = null;
+                }
         }
 
         #endregion
@@ -3472,14 +3975,10 @@ namespace ArcadiaCustoms.Functions
 
             }
 
-            public string ID { get; set; } = string.Empty;
-
-            public string Artist { get; set; } = string.Empty;
             public string Title { get; set; } = string.Empty;
             public string Creator { get; set; } = string.Empty;
 
             public string Description { get; set; } = string.Empty;
-            public int Difficulty { get; set; }
 
             public Vector2Int Position { get; set; }
 
@@ -3489,7 +3988,6 @@ namespace ArcadiaCustoms.Functions
             public Image BaseImage { get; set; }
             public Image BaseIcon { get; set; }
             public Image Icon { get; set; }
-            public Image DifficultyImage { get; set; }
 
             public Clickable Clickable { get; set; }
 
@@ -3498,6 +3996,33 @@ namespace ArcadiaCustoms.Functions
 
             public bool selected;
 
+            public SteamworksFacepunch.Ugc.Item Item { get; set; }
+
+            public void Subscribe()
+            {
+                Item.Subscribe();
+
+                Item.Download();
+
+                Debug.Log($"{ArcadePlugin.className}{Item.Directory}");
+            }
+
+            public void Unsubscribe()
+            {
+                var id = Item.Id;
+
+                Item.Unsubscribe();
+
+                if (SteamWorkshopManager.inst.Levels.Has(x => x.id == id.ToString()))
+                {
+                    SteamWorkshopManager.inst.Levels.RemoveAll(x => x.id == id.ToString());
+                }
+
+                if (inst.SubscribedSteamLevels.Has(x => x.Level.id == id.ToString()) && inst.steamViewType == SteamViewType.Subscribed)
+                {
+                    inst.StartCoroutine(inst.RefreshSubscribedSteamLevels());
+                }
+            }
         }
 
         public class OnlineLevelButton
