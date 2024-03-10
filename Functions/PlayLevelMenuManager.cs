@@ -691,7 +691,7 @@ namespace ArcadiaCustoms.Functions
 
                     AudioManager.inst.PlaySound("LeftRight");
                     selected.y = 5;
-                    selected.x = 0;
+                    selected.x = 1;
                 };
 
                 SettingsSelectionLimit[5]++;
