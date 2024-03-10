@@ -36,6 +36,9 @@
     <Reference Include="DOTween">
       <HintPath>..\lib\DOTween.dll</HintPath>
     </Reference>
+    <Reference Include="Facepunch.Steamworks.Win64">
+      <HintPath>..\lib\Facepunch.Steamworks.Win64.dll</HintPath>
+    </Reference>
     <Reference Include="InControl">
       <HintPath>..\lib\InControl.dll</HintPath>
     </Reference>
