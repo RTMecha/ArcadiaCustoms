@@ -194,13 +194,13 @@ namespace ArcadiaCustoms
         {
             SteamWorkshopManager.inst.Levels = LevelManager.SortLevels(SteamWorkshopManager.inst.Levels, (int)SteamLevelOrderby.Value, SteamLevelAscend.Value);
 
-            if (ArcadeMenuManager.inst && ArcadeMenuManager.inst.CurrentTab == 5)
+            if (ArcadeMenuManager.inst && ArcadeMenuManager.inst.CurrentTab == 5 && ArcadeMenuManager.inst.steamViewType == ArcadeMenuManager.SteamViewType.Subscribed)
             {
                 ArcadeMenuManager.inst.selected = new Vector2Int(0, 2);
                 if (ArcadeMenuManager.inst.steamPageField.text != "0")
                     ArcadeMenuManager.inst.steamPageField.text = "0";
                 else
-                    StartCoroutine(ArcadeMenuManager.inst.RefreshSteamLevels());
+                    StartCoroutine(ArcadeMenuManager.inst.RefreshSubscribedSteamLevels());
             }
         }
         
