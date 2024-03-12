@@ -1,3 +1,13 @@
+2.0.0 > [Mar 12, 2024]
+- Created a new Online Server that you can upload modded levels to and download modded levels from, although it is not fully implemented yet. It will be ready in 2.1.0 or so.
+- Fixed a bug with the [NEXT] button not showing up if there's no [GET SONG] button.
+- Completely reworked the Arcade UI to better fit what it used to be and allow for keyboard, controller and mouse support. However, if you want to use the original modded UI, you can. The new UI includes the following:
+- Local tab: Play levels from your local beatmaps/arcade folder (or from a custom one).
+- Online tab: Download levels that people have uploaded to the custom server and place it into your local levels folder.
+- Browser tab: Select a level from anywhere on your computer and play it.
+- Download tab: Download a singular level from a URL and add it to your local levels.
+- Queue tab: Manage your current Arcade Queue.
+- Steam tab: Play already subscribed levels or subscribe to levels on the workshop.
 1.6.3 > [Feb 5, 2024]
 - Forgot to make ArcadiaCustoms register to RTFunctions mod compatibility.
 1.6.2 > [Dec 26, 2023]
