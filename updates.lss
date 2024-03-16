@@ -1,6 +1,6 @@
 2.0.1 > [Mar 17, 2024]
-- Added Copy / Paste buttons to the Queue tab. This allows you to share your arcade queues with other people. You can also press Ctrl + V while in the Queue tab to paste a queue.
-- Fixed some bugs with the Queue tab, such as the NEXT button not being selectable and the Queue buttons being too big when hovered over. However, this depends on the user already having the level in their local levels list or Steam subscribed items list. If not, then an error will be logged in the console letting the user know about the missing level. (No visual way to display missing levels atm)
+- Added Copy / Paste buttons to the Queue tab. This allows you to share your arcade queues with other people. You can also press Ctrl + V while in the Queue tab to paste a queue. However, this depends on the user already having the level in their local levels list or Steam subscribed items list. If not, then an error will be logged in the console letting the user know about the missing level. (No visual way to display missing levels atm)
+- Fixed some bugs with the Queue tab, such as the NEXT button not being selectable and the Queue buttons being too big when hovered over.
 2.0.0 > [Mar 12, 2024]
 - Created a new Online Server that you can upload modded levels to and download modded levels from, although it is not fully implemented yet. It will be ready in 2.1.0 or so.
 - Fixed a bug with the [NEXT] button not showing up if there's no [GET SONG] button.
