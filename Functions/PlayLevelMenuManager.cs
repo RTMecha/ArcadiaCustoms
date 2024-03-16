@@ -256,15 +256,11 @@ namespace ArcadiaCustoms.Functions
                         return;
 
                     AudioManager.inst.PlaySound("blip");
-                    Debug.Log($"{ArcadePlugin.className}Play");
+                    Debug.Log($"{ArcadePlugin.className}Add to Queue {CurrentLevel.id}");
                     if (LevelManager.ArcadeQueue.Has(x => x.id == CurrentLevel.id))
-                    {
                         LevelManager.ArcadeQueue.RemoveAll(x => x.id == CurrentLevel.id);
-                    }
                     else
-                    {
                         LevelManager.ArcadeQueue.Add(CurrentLevel);
-                    }
 
                     play.Text.text = LevelManager.ArcadeQueue.Has(x => x.id == CurrentLevel.id) ? "[REMOVE FROM QUEUE]" : "[ADD TO QUEUE]";
                 };
