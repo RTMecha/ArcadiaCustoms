@@ -347,6 +347,11 @@ namespace ArcadiaCustoms.Functions
 
                 if (CurrentTab == 4)
                 {
+                    if (Input.GetKey(KeyCode.LeftControl) && Input.GetKeyDown(KeyCode.V))
+                    {
+                        ArcadePlugin.PasteArcadeQueue();
+                    }
+
                     queuePageField.caretColor = highlightColor;
                     queueSearchField.caretColor = highlightColor;
 
@@ -378,8 +383,8 @@ namespace ArcadiaCustoms.Functions
                                     new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
                                     {
                                         new FloatKeyframe(0f, 1f, Ease.Linear),
-                                        new FloatKeyframe(0.3f, 1.1f, Ease.CircOut),
-                                        new FloatKeyframe(0.31f, 1.1f, Ease.Linear),
+                                        new FloatKeyframe(0.3f, 1.04f, Ease.CircOut),
+                                        new FloatKeyframe(0.31f, 1.04f, Ease.Linear),
                                     }, delegate (float x)
                                     {
                                         if (level.RectTransform != null)
@@ -404,7 +409,7 @@ namespace ArcadiaCustoms.Functions
                                 {
                                     new AnimationManager.Animation.AnimationObject<float>(new List<IKeyframe<float>>
                                     {
-                                        new FloatKeyframe(0f, 1.1f, Ease.Linear),
+                                        new FloatKeyframe(0f, 1.04f, Ease.Linear),
                                         new FloatKeyframe(0.3f, 1f, Ease.BounceOut),
                                         new FloatKeyframe(0.31f, 1f, Ease.Linear),
                                     }, delegate (float x)
@@ -1683,7 +1688,7 @@ namespace ArcadiaCustoms.Functions
                     localSettingsBar.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.01f);
 
                     var reload = UIManager.GenerateUIImage("Shuffle", localSettingsBar.GetObject<RectTransform>());
-                    UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(-600f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(360f, 64f));
+                    UIManager.SetRectTransform(reload.GetObject<RectTransform>(), new Vector2(-760f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(360f, 64f));
 
                     var reloadClickable = reload.GetObject<GameObject>().AddComponent<Clickable>();
 
@@ -1726,7 +1731,7 @@ namespace ArcadiaCustoms.Functions
                     });
 
                     var shuffle = UIManager.GenerateUIImage("Shuffle", localSettingsBar.GetObject<RectTransform>());
-                    UIManager.SetRectTransform(shuffle.GetObject<RectTransform>(), new Vector2(-300f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
+                    UIManager.SetRectTransform(shuffle.GetObject<RectTransform>(), new Vector2(-460f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
 
                     var shuffleClickable = shuffle.GetObject<GameObject>().AddComponent<Clickable>();
 
@@ -1769,7 +1774,7 @@ namespace ArcadiaCustoms.Functions
                     });
 
                     var play = UIManager.GenerateUIImage("Play", localSettingsBar.GetObject<RectTransform>());
-                    UIManager.SetRectTransform(play.GetObject<RectTransform>(), new Vector2(-50f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
+                    UIManager.SetRectTransform(play.GetObject<RectTransform>(), new Vector2(-240f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
 
                     var playClickable = play.GetObject<GameObject>().AddComponent<Clickable>();
 
@@ -1827,7 +1832,7 @@ namespace ArcadiaCustoms.Functions
                     });
 
                     var clear = UIManager.GenerateUIImage("Clear", localSettingsBar.GetObject<RectTransform>());
-                    UIManager.SetRectTransform(clear.GetObject<RectTransform>(), new Vector2(200f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
+                    UIManager.SetRectTransform(clear.GetObject<RectTransform>(), new Vector2(-20f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(200f, 64f));
 
                     var clearClickable = clear.GetObject<GameObject>().AddComponent<Clickable>();
 
@@ -1869,6 +1874,92 @@ namespace ArcadiaCustoms.Functions
                         Text = clearText.GetObject<TextMeshProUGUI>(),
                         Position = new Vector2Int(3, 1),
                     });
+                    
+                    var copy = UIManager.GenerateUIImage("Copy", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(copy.GetObject<RectTransform>(), new Vector2(170f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(160f, 64f));
+
+                    var copyClickable = copy.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    copy.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(copy.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        copy.GetObject<Image>().sprite = null;
+
+                    var copyText = UIManager.GenerateUITextMeshPro("Text", copy.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(copyText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    copyText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    copyText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                    copyText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    copyText.GetObject<TextMeshProUGUI>().text = "[COPY]";
+
+                    copyClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(4, 1);
+                    };
+                    copyClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        AudioManager.inst.PlaySound("blip");
+                        ArcadePlugin.CopyArcadeQueue();
+                    };
+
+                    Settings[4].Add(new Tab
+                    {
+                        GameObject = copy.GetObject<GameObject>(),
+                        RectTransform = copy.GetObject<RectTransform>(),
+                        Clickable = copyClickable,
+                        Image = copy.GetObject<Image>(),
+                        Text = copyText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(4, 1),
+                    });
+                    
+                    var paste = UIManager.GenerateUIImage("Paste", localSettingsBar.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(paste.GetObject<RectTransform>(), new Vector2(350f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(180f, 64f));
+
+                    var pasteClickable = paste.GetObject<GameObject>().AddComponent<Clickable>();
+
+                    paste.GetObject<Image>().color = Color.Lerp(buttonBGColor, Color.white, 0.03f);
+
+                    if (ArcadePlugin.TabsRoundedness.Value != 0)
+                        SpriteManager.SetRoundedSprite(paste.GetObject<Image>(), ArcadePlugin.TabsRoundedness.Value, SpriteManager.RoundedSide.W);
+                    else
+                        paste.GetObject<Image>().sprite = null;
+
+                    var pasteText = UIManager.GenerateUITextMeshPro("Text", paste.GetObject<RectTransform>());
+                    UIManager.SetRectTransform(pasteText.GetObject<RectTransform>(), Vector2.zero, ZeroFive, ZeroFive, ZeroFive, Vector2.zero);
+                    pasteText.GetObject<TextMeshProUGUI>().alignment = TextAlignmentOptions.Center;
+                    pasteText.GetObject<TextMeshProUGUI>().fontSize = 32;
+                    pasteText.GetObject<TextMeshProUGUI>().fontStyle = FontStyles.Bold;
+                    pasteText.GetObject<TextMeshProUGUI>().text = "[PASTE]";
+
+                    pasteClickable.onEnter = delegate (PointerEventData pointerEventData)
+                    {
+                        if (!CanSelect)
+                            return;
+
+                        AudioManager.inst.PlaySound("LeftRight");
+                        selected = new Vector2Int(5, 1);
+                    };
+                    pasteClickable.onClick = delegate (PointerEventData pointerEventData)
+                    {
+                        AudioManager.inst.PlaySound("blip");
+                        ArcadePlugin.PasteArcadeQueue();
+                    };
+
+                    Settings[4].Add(new Tab
+                    {
+                        GameObject = paste.GetObject<GameObject>(),
+                        RectTransform = paste.GetObject<RectTransform>(),
+                        Clickable = pasteClickable,
+                        Image = paste.GetObject<Image>(),
+                        Text = pasteText.GetObject<TextMeshProUGUI>(),
+                        Position = new Vector2Int(5, 1),
+                    });
 
                     var prevPage = UIManager.GenerateUIImage("Previous", localSettingsBar.GetObject<RectTransform>());
                     UIManager.SetRectTransform(prevPage.GetObject<RectTransform>(), new Vector2(500f, 0f), ZeroFive, ZeroFive, ZeroFive, new Vector2(80f, 64f));
@@ -1896,7 +1987,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = prevPageClickable,
                         Image = prevPage.GetObject<Image>(),
                         Text = prevPageText.GetObject<TextMeshProUGUI>(),
-                        Position = new Vector2Int(4, 1),
+                        Position = new Vector2Int(6, 1),
                     });
 
                     var pageField = UIManager.GenerateUIInputField("Page", localSettingsBar.GetObject<RectTransform>());
@@ -1944,7 +2035,7 @@ namespace ArcadiaCustoms.Functions
                         Clickable = nextPageClickable,
                         Image = nextPage.GetObject<Image>(),
                         Text = nextPageText.GetObject<TextMeshProUGUI>(),
-                        Position = new Vector2Int(5, 1),
+                        Position = new Vector2Int(7, 1),
                     });
 
                     queuePageField.onValueChanged.AddListener(delegate (string _val)
@@ -1964,7 +2055,7 @@ namespace ArcadiaCustoms.Functions
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
-                        selected = new Vector2Int(4, 1);
+                        selected = new Vector2Int(6, 1);
                     };
                     prevPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
@@ -1988,7 +2079,7 @@ namespace ArcadiaCustoms.Functions
                             return;
 
                         AudioManager.inst.PlaySound("LeftRight");
-                        selected = new Vector2Int(5, 1);
+                        selected = new Vector2Int(7, 1);
                     };
                     nextPageClickable.onClick = delegate (PointerEventData pointerEventData)
                     {
@@ -2483,7 +2574,7 @@ namespace ArcadiaCustoms.Functions
                         }
                     case 5:
                         {
-                            SelectionLimit[1] = 6;
+                            SelectionLimit[1] = 8;
 
                             StartCoroutine(RefreshQueuedLevels());
 
@@ -2491,7 +2582,7 @@ namespace ArcadiaCustoms.Functions
                         }
                     case 6:
                         {
-                            SelectionLimit[1] = 3;
+                            SelectionLimit[1] = 4;
 
                             if (steamViewType == SteamViewType.Subscribed)
                                 StartCoroutine(SteamWorkshopManager.inst.hasLoaded ? RefreshSubscribedSteamLevels() : SetSteamSearch());

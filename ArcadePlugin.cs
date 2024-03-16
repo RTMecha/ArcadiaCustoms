@@ -32,10 +32,11 @@ using RTFunctions.Functions.Managers;
 using RTFunctions.Functions.Managers.Networking;
 using RTFunctions.Functions.Data;
 using System.Linq;
+using System.Windows.Forms;
 
 namespace ArcadiaCustoms
 {
-    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", "2.0.0")]
+    [BepInPlugin("com.mecha.arcadiacustoms", "ArcadiaCustoms", "2.0.1")]
     [BepInDependency("com.mecha.rtfunctions")]
     [BepInProcess("Project Arrhythmia.exe")]
     public class ArcadePlugin : BaseUnityPlugin
@@ -407,6 +408,73 @@ namespace ArcadiaCustoms
                 LoadLevelsManager.inst.End();
 
             yield break;
+        }
+
+        public static void CopyArcadeQueue()
+        {
+            var jn = JSON.Parse("{}");
+
+            for (int i = 0; i < LevelManager.ArcadeQueue.Count; i++)
+            {
+                jn["queue"][i]["id"] = LevelManager.ArcadeQueue[i].id;
+            }
+
+            LSText.CopyToClipboard(jn.ToString());
+        }
+
+        public static void PasteArcadeQueue()
+        {
+            //var path = RTFile.ApplicationDirectory + "profile/queues.sep";
+            //if (!RTFile.FileExists(path))
+            //    return;
+
+            try
+            {
+                if (!Clipboard.ContainsText())
+                    return;
+
+                var text = Clipboard.GetText();
+
+                var jn = JSON.Parse(text);
+
+                if (jn["queue"] == null)
+                    return;
+
+                LevelManager.ArcadeQueue.Clear();
+
+                for (int i = 0; i < jn["queue"].Count; i++)
+                {
+                    var jnQueue = jn["queue"][i];
+
+                    var hasLocal = LevelManager.Levels.Has(x => x.id == jnQueue["id"]);
+                    var hasSteam = SteamWorkshopManager.inst.Levels.Has(x => x.id == jnQueue["id"]);
+
+                    if ((hasLocal || hasSteam) && !LevelManager.ArcadeQueue.Has(x => x.id == jnQueue["id"]))
+                    {
+                        var currentLevel = hasSteam ? SteamWorkshopManager.inst.Levels.Find(x => x.id == jnQueue["id"]) :
+                            LevelManager.Levels.Find(x => x.id == jnQueue["id"]);
+
+                        LevelManager.ArcadeQueue.Add(currentLevel);
+                    }
+                    else if (!hasLocal && !hasSteam)
+                    {
+                        Debug.LogError($"{className}Level with ID {jnQueue["id"]} does not currently exist in your Local folder / Steam subscribed items.");
+                    }
+                }
+
+                if (ArcadeMenuManager.inst && ArcadeMenuManager.inst.CurrentTab == 4)
+                {
+                    if (ArcadeMenuManager.inst.queuePageField.text != "0")
+                        ArcadeMenuManager.inst.queuePageField.text = "0";
+                    else
+                        inst.StartCoroutine(ArcadeMenuManager.inst.RefreshQueuedLevels());
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"{className}Pasted text was probably not in the correct format.\n{ex}");
+            }
+
         }
 
         public static IEnumerator OnLoadingEnd()
